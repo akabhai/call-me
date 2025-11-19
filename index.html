@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Meeting</title>
+    <title>Connect | Call Me</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="centered-layout">
@@ -11,7 +11,7 @@
     <div class="landing-card">
         <div class="header">
             <h1>Video Meeting</h1>
-            <p>Free, secure peer-to-peer video chat.</p>
+            <p>Secure, P2P video chat.</p>
         </div>
 
         <button id="createRoomBtn" class="btn-primary">
@@ -37,7 +37,7 @@
         </div>
 
         <div class="input-group">
-            <input type="text" id="joinMagnetLink" placeholder="Paste full link here...">
+            <input type="text" id="joinLinkInput" placeholder="Paste link or Room ID">
             <button id="joinRoomBtn" class="btn-join">Join</button>
         </div>
     </div>
@@ -50,23 +50,21 @@
         const startBtn = document.getElementById('startMeetingBtn');
         const joinBtn = document.getElementById('joinRoomBtn');
 
-        // 1. Generate FULL URL Logic
+        // 1. Generate Clean URL Logic
         createBtn.addEventListener('click', () => {
-            const roomHash = Math.random().toString(36).substring(2, 10);
-            // Raw Magnet (for internal use)
-            const magnet = `magnet:?xt=urn:btih:${roomHash}&dn=CallRoom`;
+            // Generate a random Room ID (cleaner than a full magnet)
+            const roomId = Math.random().toString(36).substring(2, 12);
             
-            // Construct Full URL: Protocol + Host + Path to call.html
-            // This works on localhost and custom domains
-            const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
-            // Ensure no double slashes if pathname ends with /
-            const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
-            const fullLink = `${cleanBaseUrl}call.html?magnet=${encodeURIComponent(magnet)}`;
+            // Get the current path (e.g., "https://akabhai.github.io/call-me/")
+            // We strip 'index.html' if it exists to get the folder root
+            const currentPath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+            
+            // Construct the clean link
+            const fullLink = `${currentPath}call.html?room=${roomId}`;
 
+            // Update UI
             createBtn.style.display = 'none';
             linkArea.style.display = 'block';
-
-            // Show Full Link
             linkInput.value = fullLink;
 
             // Start Button
@@ -86,16 +84,18 @@
             });
         });
 
-        // 3. Join Logic (Smart Parsing)
+        // 3. Join Logic
         joinBtn.addEventListener('click', () => {
-            let val = document.getElementById('joinMagnetLink').value;
+            const val = document.getElementById('joinLinkInput').value.trim();
             if(!val) return alert("Please enter a link");
 
-            // If user pasted full URL, redirect to it. If magnet, construct URL.
-            if(val.includes('http') || val.includes('call.html')) {
+            if(val.includes('http')) {
+                // If they pasted a full link, go there
                 window.location.href = val;
             } else {
-                window.location.href = `call.html?magnet=${encodeURIComponent(val)}`;
+                // If they just typed an ID, go to call.html?room=ID
+                const currentPath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+                window.location.href = `${currentPath}call.html?room=${val}`;
             }
         });
     </script>
