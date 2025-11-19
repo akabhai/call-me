@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serverless P2P Video Call</title>
+    <style>
+        :root {
+            --primary-color: #0ff; /* Neon blue */
+            --secondary-color: #f0f; /* Neon pink */
+            --bg-color: #1a1a2e; /* Dark blue-purple */
+            --card-bg: rgba(255, 255, 255, 0.1);
+            --text-color: #e0e0e0;
+            --border-glow: 0 0 15px var(--primary-color), 0 0 25px var(--secondary-color);
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--bg-color), #0f0f1d);
+            color: var(--text-color);
+            overflow: hidden;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at top left, var(--primary-color) 0%, transparent 20%),
+                        radial-gradient(circle at bottom right, var(--secondary-color) 0%, transparent 20%);
+            opacity: 0.2;
+            animation: background-pan 30s linear infinite;
+        }
+        @keyframes background-pan {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-50%, -50%); }
+        }
+        .container {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 1s ease-out;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--secondary-color);
+        }
+        .button-group button, .input-group input {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            color: var(--text-color);
+        }
+        .button-group button {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            box-shadow: 0 0 15px var(--primary-color), 0 0 25px var(--secondary-color);
+            font-weight: bold;
+        }
+        .button-group button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px var(--primary-color), 0 0 30px var(--secondary-color);
+        }
+        .button-group button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 50%;
+            transform: scale(1) translate(-50%, -50%);
+            transition: all 0.5s ease-out;
+        }
+        .button-group button:active::after {
+            transform: scale(150) translate(-50%, -50%);
+            opacity: 1;
+            transition: 0s;
+        }
+
+        .input-group input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            width: calc(100% - 70px);
+            max-width: 350px;
+            box-sizing: border-box;
+            color: var(--text-color);
+            outline: none;
+            padding-left: 20px;
+        }
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .input-group button {
+            background: var(--primary-color);
+            box-shadow: 0 0 10px var(--primary-color);
+            margin-left: -5px; /* Adjust to align with input */
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            padding: 15px 20px;
+        }
+        .input-group button:hover {
+            background: var(--secondary-color);
+            box-shadow: 0 0 10px var(--secondary-color);
+        }
+        #magnetLinkDisplay {
+            margin-top: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #ccc;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: none;
+            text-align: left;
+            position: relative;
+        }
+        #magnetLinkDisplay::before {
+            content: "Your Room Magnet Link:";
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            font-size: 0.8em;
+            color: var(--primary-color);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 8px;
+            border-radius: 5px;
+        }
+        #copyMagnetLink {
+            background: #28a745;
+            margin-left: 10px;
+            padding: 8px 15px;
+            font-size: 0.9em;
+            box-shadow: 0 0 8px #28a745;
+            border-radius: 5px;
+            display: none;
+        }
+        #copyMagnetLink:hover {
+            background: #218838;
+            box-shadow: 0 0 12px #218838;
+        }
+        #qrCodeContainer {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            display: none;
+        }
+        #qrCodeContainer svg {
+            background: white; /* QR codes are usually white */
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+            }
+            h1 {
+                font-size: 2em;
+            }
+            .button-group button, .input-group input {
+                width: 100%;
+                margin: 10px 0;
+            }
+            .input-group button {
+                width: 100%;
+                margin: 10px 0;
+                border-radius: 10px; /* Reset border radius for full width */
+            }
+            .input-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            #magnetLinkDisplay {
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>P2P Video Call</h1>
+        <div class="button-group">
+            <button id="createRoomBtn">Create Room</button>
+        </div>
+        <div class="input-group" style="display: flex; margin-top: 20px;">
+            <input type="text" id="joinMagnetLink" placeholder="Or enter magnet link to join...">
+            <button id="joinRoomBtn">Join</button>
+        </div>
+
+        <div id="magnetLinkDisplay"></div>
+        <button id="copyMagnetLink">Copy Link</button>
+        <div id="qrCodeContainer"></div>
+    </div>
+
+    <script>
+        // Minimal utility for UUID generation
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0,
+                    v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // Extremely simplified QR code generator (placeholder, actual implementation is massive)
+        // This is not a full QR code generator, but a visual placeholder to demonstrate the concept.
+        function generateQRCodeSVG(text, size = 100) {
+            // A real QR code generation would involve complex algorithms.
+            // This is a minimal SVG placeholder.
+            return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="100" height="100" fill="#FFFFFF"/>
+                <rect x="10" y="10" width="20" height="20" fill="#000000"/>
+                <rect x="70" y="10" width="20" height="20" fill="#000000"/>
+                <rect x="10" y="70" width="20" height="20" fill="#000000"/>
+                <rect x="40" y="40" width="20" height="20" fill="#000000"/>
+                <text x="50%" y="95%" font-family="Arial" font-size="8" fill="#888" text-anchor="middle">QR placeholder</text>
+            </svg>`;
+        }
+
+        document.getElementById('createRoomBtn').addEventListener('click', () => {
+            const roomHash = generateUUID();
+            // In a real WebTorrent scenario, the magnet link would be based on an info hash
+            // for the "signaling torrent." Here, we just use a unique room ID.
+            // For a true WebTorrent magnet link: magnet:?xt=urn:btih:INFO_HASH&dn=DISPLAY_NAME&tr=TRACKER_URL
+            // We'll simulate this with a simple query parameter for now.
+            // A real magnet link would involve creating a tiny torrent and getting its infoHash.
+            const magnetLink = `magnet:?xt=urn:btih:${roomHash.replace(/-/g, '')}&dn=P2PVideoCall&tr=wss://tracker.webtorrent.io`;
+
+            document.getElementById('magnetLinkDisplay').textContent = magnetLink;
+            document.getElementById('magnetLinkDisplay').style.display = 'block';
+            document.getElementById('copyMagnetLink').style.display = 'inline-block';
+
+            document.getElementById('qrCodeContainer').innerHTML = generateQRCodeSVG(magnetLink, 150);
+            document.getElementById('qrCodeContainer').style.display = 'flex';
+
+
+            // Encode the magnet link for URL parameter
+            const encodedMagnet = encodeURIComponent(magnetLink);
+            window.location.href = `call.html?magnet=${encodedMagnet}`;
+        });
+
+        document.getElementById('joinRoomBtn').addEventListener('click', () => {
+            const magnetLink = document.getElementById('joinMagnetLink').value;
+            if (magnetLink) {
+                const encodedMagnet = encodeURIComponent(magnetLink);
+                window.location.href = `call.html?magnet=${encodedMagnet}`;
+            } else {
+                alert('Please enter a magnet link to join a room.');
+            }
+        });
+
+        document.getElementById('copyMagnetLink').addEventListener('click', () => {
+            const magnetLink = document.getElementById('magnetLinkDisplay').textContent;
+            navigator.clipboard.writeText(magnetLink).then(() => {
+                const originalText = document.getElementById('copyMagnetLink').textContent;
+                document.getElementById('copyMagnetLink').textContent = 'Copied!';
+                setTimeout(() => {
+                    document.getElementById('copyMagnetLink').textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy magnet link:', err);
+                alert('Failed to copy magnet link. Please copy it manually.');
+            });
+        });
+    </script>
+</body>
+</html>
