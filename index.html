@@ -6,7 +6,6 @@
     <title>Video Meeting</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<!-- Added class "centered-layout" to force centering -->
 <body class="centered-layout">
 
     <div class="landing-card">
@@ -15,9 +14,24 @@
             <p>Free, secure peer-to-peer video chat.</p>
         </div>
 
+        <!-- 1. Initial "New Meeting" Button -->
         <button id="createRoomBtn" class="btn-primary">
             New Meeting
         </button>
+
+        <!-- 2. Hidden Area: Shows Link AFTER clicking "New Meeting" -->
+        <div id="linkArea" class="link-generation-container">
+            <span class="link-label">Here's your meeting link to share:</span>
+            
+            <div class="link-box">
+                <input type="text" id="generatedLinkInput" readonly>
+                <button id="copyBtn" title="Copy to clipboard">📋</button>
+            </div>
+
+            <button id="startMeetingBtn" class="btn-start">
+                Start Meeting
+            </button>
+        </div>
 
         <div class="divider">
             <span>or join via link</span>
@@ -30,13 +44,46 @@
     </div>
 
     <script>
-        document.getElementById('createRoomBtn').addEventListener('click', () => {
+        // Elements
+        const createBtn = document.getElementById('createRoomBtn');
+        const linkArea = document.getElementById('linkArea');
+        const linkInput = document.getElementById('generatedLinkInput');
+        const copyBtn = document.getElementById('copyBtn');
+        const startBtn = document.getElementById('startMeetingBtn');
+        const joinBtn = document.getElementById('joinRoomBtn');
+
+        // 1. Generate Link Logic
+        createBtn.addEventListener('click', () => {
+            // Generate Hash
             const roomHash = Math.random().toString(36).substring(2, 10);
             const magnet = `magnet:?xt=urn:btih:${roomHash}&dn=CallRoom`;
-            window.location.href = `call.html?magnet=${encodeURIComponent(magnet)}`;
+
+            // Swap UI: Hide "New Meeting", Show "Link Area"
+            createBtn.style.display = 'none';
+            linkArea.style.display = 'block';
+
+            // Fill Input
+            linkInput.value = magnet;
+
+            // Setup Start Button to actually go there
+            startBtn.onclick = () => {
+                window.location.href = `call.html?magnet=${encodeURIComponent(magnet)}`;
+            };
         });
 
-        document.getElementById('joinRoomBtn').addEventListener('click', () => {
+        // 2. Copy Logic
+        copyBtn.addEventListener('click', () => {
+            linkInput.select();
+            linkInput.setSelectionRange(0, 99999); // Mobile support
+            navigator.clipboard.writeText(linkInput.value).then(() => {
+                const original = copyBtn.innerHTML;
+                copyBtn.innerHTML = "✅";
+                setTimeout(() => copyBtn.innerHTML = original, 1500);
+            });
+        });
+
+        // 3. Join Logic
+        joinBtn.addEventListener('click', () => {
             const val = document.getElementById('joinMagnetLink').value;
             if(val) window.location.href = `call.html?magnet=${encodeURIComponent(val)}`;
             else alert("Please enter a link code");
