@@ -3,26 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P2P Video - Home</title>
+    <title>Connect | P2P Video</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts: Inter for that clean aesthetic look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
-        <h1>P2P Video Call</h1>
-        <div class="button-group">
-            <button id="createRoomBtn">Create Room</button>
+<body class="landing-body">
+
+    <!-- Background ambient blobs for aesthetics -->
+    <div class="ambient-glow one"></div>
+    <div class="ambient-glow two"></div>
+
+    <div class="landing-card">
+        <div class="header">
+            <div class="icon-box">📹</div>
+            <h1>Connect.</h1>
+            <p>Secure, serverless, peer-to-peer video chat.</p>
         </div>
-        <div class="input-group">
-            <input type="text" id="joinMagnetLink" placeholder="Or enter magnet link...">
-            <button id="joinRoomBtn">Join</button>
+
+        <div class="actions">
+            <button id="createRoomBtn" class="btn-primary">
+                <span>+</span> Create New Room
+            </button>
+            
+            <div class="divider">
+                <span>or join via link</span>
+            </div>
+
+            <div class="input-wrapper">
+                <input type="text" id="joinMagnetLink" placeholder="Paste magnet link here...">
+                <button id="joinRoomBtn" class="btn-icon">
+                    →
+                </button>
+            </div>
         </div>
-        <div id="magnetLinkDisplay"></div>
     </div>
 
     <script>
-        // Simple logic to generate link and redirect
         document.getElementById('createRoomBtn').addEventListener('click', () => {
-            const roomHash = Math.random().toString(36).substring(7);
+            // Generate a cleaner random ID
+            const roomHash = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
             const magnet = `magnet:?xt=urn:btih:${roomHash}&dn=CallRoom`;
             window.location.href = `call.html?magnet=${encodeURIComponent(magnet)}`;
         });
@@ -30,6 +50,7 @@
         document.getElementById('joinRoomBtn').addEventListener('click', () => {
             const val = document.getElementById('joinMagnetLink').value;
             if(val) window.location.href = `call.html?magnet=${encodeURIComponent(val)}`;
+            else alert("Please paste a link first");
         });
     </script>
 </body>
