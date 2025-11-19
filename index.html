@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connect | Call Me</title>
+    <title>Video Meeting</title>
+    <!-- IMPORTANT: This links the CSS file -->
     <link rel="stylesheet" href="style.css">
 </head>
+<!-- This class triggers the centering CSS -->
 <body class="centered-layout">
 
     <div class="landing-card">
         <div class="header">
             <h1>Video Meeting</h1>
-            <p>Secure, P2P video chat.</p>
+            <p>Secure, peer-to-peer video chat.</p>
         </div>
 
         <button id="createRoomBtn" class="btn-primary">
             New Meeting
         </button>
 
-        <!-- Link Generation Area -->
+        <!-- Link Generation Area (Hidden initially) -->
         <div id="linkArea" class="link-generation-container">
             <span class="link-label">Share this link to invite others:</span>
             
@@ -37,7 +39,7 @@
         </div>
 
         <div class="input-group">
-            <input type="text" id="joinLinkInput" placeholder="Paste link or Room ID">
+            <input type="text" id="joinLinkInput" placeholder="Paste link or ID">
             <button id="joinRoomBtn" class="btn-join">Join</button>
         </div>
     </div>
@@ -52,22 +54,16 @@
 
         // 1. Generate Clean URL Logic
         createBtn.addEventListener('click', () => {
-            // Generate a random Room ID (cleaner than a full magnet)
             const roomId = Math.random().toString(36).substring(2, 12);
             
-            // Get the current path (e.g., "https://akabhai.github.io/call-me/")
-            // We strip 'index.html' if it exists to get the folder root
+            // Clean URL generation for GitHub Pages or Localhost
             const currentPath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-            
-            // Construct the clean link
             const fullLink = `${currentPath}call.html?room=${roomId}`;
 
-            // Update UI
             createBtn.style.display = 'none';
             linkArea.style.display = 'block';
             linkInput.value = fullLink;
 
-            // Start Button
             startBtn.onclick = () => {
                 window.location.href = fullLink;
             };
@@ -90,10 +86,8 @@
             if(!val) return alert("Please enter a link");
 
             if(val.includes('http')) {
-                // If they pasted a full link, go there
                 window.location.href = val;
             } else {
-                // If they just typed an ID, go to call.html?room=ID
                 const currentPath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
                 window.location.href = `${currentPath}call.html?room=${val}`;
             }
