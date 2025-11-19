@@ -1,175 +1,180 @@
-:root {
-    /* Zoom-like Aesthetic Palette */
-    --bg-color: #f5f7fa;       /* Very light grey-blue background */
-    --card-bg: #ffffff;        /* Pure white card */
-    --primary: #0e71eb;        /* Zoom Blue */
-    --primary-hover: #0b5ed7;
-    --text-main: #222222;
-    --text-muted: #666666;
-    --border-color: #e1e3e6;
-    --shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-    --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}
-
-html, body {
+/* =========================================
+   GLOBAL RESET & FONTS
+   ========================================= */
+* {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    height: 100%; /* Critical for centering */
-    width: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-body {
-    background-color: var(--bg-color);
-    color: var(--text-main);
-    font-family: var(--font-main);
-    display: flex;             /* Flexbox for centering */
+html {
+    height: 100%;
+}
+
+/* =========================================
+   1. LANDING PAGE STYLES (The Center Fix)
+   ========================================= */
+
+/* This specific class ensures the Landing Page is ALWAYS centered */
+body.centered-layout {
+    background-color: #ffffff; /* Clean White Background */
+    min-height: 100vh;         /* Force full screen height */
+    width: 100vw;
+    display: flex;             /* Flexbox */
     align-items: center;       /* Vertical Center */
     justify-content: center;   /* Horizontal Center */
 }
 
-/* =========================================
-   LANDING PAGE (The Card)
-   ========================================= */
-
+/* The Card */
 .landing-card {
-    background: var(--card-bg);
+    background: #ffffff;
     width: 100%;
-    max-width: 400px;     /* Restrict width */
-    padding: 40px;
-    border-radius: 12px;  /* Smooth corners */
-    box-shadow: var(--shadow);
+    max-width: 420px;
+    padding: 48px;
+    border-radius: 0px; /* Zoom/Google style is often boxier or subtle radius */
     text-align: center;
-    border: 1px solid #e5e5e5;
-}
-
-.header {
-    margin-bottom: 30px;
+    /* Simple aesthetic border/shadow */
+    border: 1px solid #dadce0; 
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border-radius: 8px;
 }
 
 .header h1 {
-    font-size: 24px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin: 0 0 10px 0;
+    font-size: 28px;
+    font-weight: 400; /* Thinner, elegant font */
+    color: #202124;
+    margin-bottom: 10px;
 }
 
 .header p {
-    font-size: 14px;
-    color: var(--text-muted);
-    margin: 0;
+    color: #5f6368;
+    font-size: 16px;
+    margin-bottom: 40px;
 }
 
-/* Primary "New Meeting" Button */
+/* Buttons */
 .btn-primary {
     width: 100%;
-    padding: 12px;
-    background-color: var(--primary);
+    padding: 12px 24px;
+    background-color: #1a73e8; /* Google/Zoom Blue */
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 4px;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
     transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
 }
 
 .btn-primary:hover {
-    background-color: var(--primary-hover);
+    background-color: #1557b0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 /* Divider */
 .divider {
-    margin: 25px 0;
+    margin: 30px 0;
     display: flex;
     align-items: center;
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 500;
-    text-transform: uppercase;
+    color: #5f6368;
+    font-size: 14px;
 }
 .divider::before, .divider::after {
     content: "";
     flex: 1;
     height: 1px;
-    background: var(--border-color);
+    background: #dadce0;
 }
 .divider span {
-    padding: 0 10px;
+    padding: 0 15px;
 }
 
-/* Input Area */
+/* Inputs */
 .input-group {
     display: flex;
-    gap: 8px;
+    gap: 10px;
 }
 
 input {
     flex: 1;
-    padding: 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    font-size: 14px;
+    padding: 10px 15px;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    font-size: 16px;
     outline: none;
-    transition: border 0.2s;
-    color: #333;
-    background: #fff;
+    color: #202124;
 }
 
 input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(14, 113, 235, 0.1);
+    border-color: #1a73e8;
+    border-width: 2px;
+    padding: 9px 14px; /* Adjust for border width change */
 }
 
-.btn-secondary {
-    padding: 0 20px;
+.btn-join {
     background: transparent;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-main);
-    cursor: pointer;
+    color: #1a73e8;
+    border: none;
     font-weight: 600;
-    transition: all 0.2s;
+    cursor: pointer;
+    padding: 0 15px;
 }
-
-.btn-secondary:hover {
-    background: #f0f0f0;
-    border-color: #ccc;
+.btn-join:hover {
+    background: #f1f3f4;
+    border-radius: 4px;
 }
 
 /* =========================================
-   CALL PAGE STYLES (Updates for Light Mode)
+   2. CALL PAGE STYLES (Dark Mode for Video)
    ========================================= */
 
-/* If you are on the call page, the body needs to be full height but block display */
-body:has(.video-grid-container) {
+/* Default body (used by call.html) is dark */
+body:not(.centered-layout) {
+    background-color: #202124;
+    color: white;
+    height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start; /* Align top */
-    background: #222; /* Keep call interface dark for video contrast */
-    color: white;
 }
 
-/* Keep video UI dark for better viewing experience */
+.loading-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #202124;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+}
+.loading-spinner {
+    border: 3px solid rgba(255,255,255,0.2);
+    border-top: 3px solid #8ab4f8;
+    border-radius: 50%;
+    width: 40px; height: 40px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
 .video-grid-container {
     flex: 1;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 15px;
     padding: 20px;
-    width: 100%;
-    box-sizing: border-box;
+    overflow-y: auto;
 }
 
 .video-tile {
-    background: #333;
+    background: #3c4043;
     border-radius: 8px;
     overflow: hidden;
     position: relative;
     aspect-ratio: 16/9;
+    border: 1px solid #5f6368;
 }
 
 video {
@@ -178,33 +183,49 @@ video {
     object-fit: cover;
 }
 
+.user-info {
+    position: absolute;
+    bottom: 10px; left: 10px;
+    background: rgba(0,0,0,0.6);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
 .control-bar {
-    background: #111;
+    background: #202124;
     padding: 15px;
     display: flex;
     justify-content: center;
     gap: 15px;
-    width: 100%;
-    box-sizing: border-box;
+    border-top: 1px solid #3c4043;
 }
 
 .control-bar button {
-    background: #333;
-    color: white;
+    background: #3c4043;
+    color: #e8eaed;
     border: none;
-    padding: 12px 20px;
-    border-radius: 30px; /* Pill shape controls */
+    width: 50px;
+    height: 50px;
+    border-radius: 50%; /* Circle buttons */
     cursor: pointer;
-    font-size: 14px;
+    font-size: 20px; /* Icons size */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
 }
 
 .control-bar button:hover {
-    background: #444;
+    background: #5f6368;
 }
 
 #leaveBtn {
-    background-color: #ea4335; /* Google Meet Red */
+    background-color: #ea4335;
     color: white;
+    width: 60px;
+    border-radius: 30px; /* Pill shape for hangup */
 }
 
 /* Chat Sidebar */
@@ -212,23 +233,16 @@ video {
     position: fixed;
     top: 0; right: -320px;
     width: 320px; height: 100%;
-    background: #fff; /* Light chat */
-    color: #333;
+    background: #fff;
+    color: #202124;
     transition: 0.3s;
     display: flex;
     flex-direction: column;
     z-index: 100;
-    box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+    box-shadow: -2px 0 10px rgba(0,0,0,0.2);
 }
 .chat-sidebar.open { right: 0; }
-
-.chat-header {
-    padding: 15px;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.chat-messages { flex: 1; padding: 10px; overflow-y: auto; }
-.chat-input-area { padding: 15px; display: flex; gap: 5px; border-top: 1px solid #eee;}
-.chat-input-area input { border: 1px solid #ddd; }
+.chat-header { padding: 15px; border-bottom: 1px solid #dadce0; display: flex; justify-content: space-between; }
+.chat-messages { flex: 1; padding: 15px; overflow-y: auto; }
+.chat-input-area { padding: 15px; border-top: 1px solid #dadce0; display: flex; gap: 10px; }
+.chat-input-area input { padding: 8px; border: 1px solid #dadce0; }
