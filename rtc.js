@@ -1,13 +1,9 @@
-// Initialize Local Media
+// WebRTC & Media Logic
 window.RTC = {
     initMedia: async () => {
         try {
             document.getElementById('loadingStatus').textContent = "Asking for Camera/Mic...";
-            
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: true
-            });
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             
             window.AppState.localStream = stream;
             document.getElementById('localVideo').srcObject = stream;
@@ -33,16 +29,7 @@ window.RTC = {
 
         // Handle Remote Stream
         pc.ontrack = (event) => {
-            console.log("Received remote stream");
             window.UI.addVideoTile(peerId, event.streams[0]);
-        };
-
-        // Handle ICE Candidates
-        pc.onicecandidate = (event) => {
-            if (event.candidate) {
-                // In a real app, send this via WebTorrent
-                console.log("New ICE Candidate generated");
-            }
         };
 
         // Store PC
@@ -52,15 +39,69 @@ window.RTC = {
         window.AppState.peers[peerId].pc = pc;
 
         return pc;
+    },
+
+    // === FIXED SCREEN SHARE LOGIC ===
+    toggleScreenShare: async (btnElement) => {
+        // If already sharing, stop it
+        if (window.AppState.isScreenSharing) {
+            // 1. Stop screen track
+            window.AppState.screenStream.getTracks().forEach(track => track.stop());
+            // 2. Switch back to Camera
+            const camTrack = window.AppState.localStream.getVideoTracks()[0];
+            window.RTC.replaceVideoTrack(camTrack);
+            
+            document.getElementById('localVideo').srcObject = window.AppState.localStream;
+            
+            window.AppState.isScreenSharing = false;
+            btnElement.innerHTML = "🖥 Share";
+            return;
+        }
+
+        try {
+            // 1. Get Screen Stream
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            window.AppState.screenStream = screenStream;
+            const screenTrack = screenStream.getVideoTracks()[0];
+
+            // 2. Handle "Stop Sharing" browser floating bar
+            screenTrack.onended = () => {
+                if(window.AppState.isScreenSharing) window.RTC.toggleScreenShare(btnElement);
+            };
+
+            // 3. Replace Track in PeerConnections
+            window.RTC.replaceVideoTrack(screenTrack);
+
+            // 4. Update Local Video
+            document.getElementById('localVideo').srcObject = screenStream;
+
+            window.AppState.isScreenSharing = true;
+            btnElement.innerHTML = "❌ Stop";
+
+        } catch (err) {
+            console.error("Screen share cancelled", err);
+        }
+    },
+
+    // Helper to swap tracks for all peers
+    replaceVideoTrack: (newTrack) => {
+        Object.values(window.AppState.peers).forEach(peer => {
+            if (peer.pc) {
+                const sender = peer.pc.getSenders().find(s => s.track.kind === 'video');
+                if (sender) {
+                    sender.replaceTrack(newTrack);
+                }
+            }
+        });
     }
 };
 
-// Toggle Buttons
+// Event Listeners
 document.getElementById('toggleMicBtn').addEventListener('click', (e) => {
     const track = window.AppState.localStream.getAudioTracks()[0];
     if (track) {
         track.enabled = !track.enabled;
-        e.target.textContent = track.enabled ? "🎤 Mute" : "🔇 Unmute";
+        e.target.innerHTML = track.enabled ? "🎤 Mute" : "🔇 Unmute";
     }
 });
 
@@ -68,6 +109,11 @@ document.getElementById('toggleCamBtn').addEventListener('click', (e) => {
     const track = window.AppState.localStream.getVideoTracks()[0];
     if (track) {
         track.enabled = !track.enabled;
-        e.target.textContent = track.enabled ? "📹 Off" : "📷 On";
+        e.target.innerHTML = track.enabled ? "📹 Off" : "📷 On";
     }
+});
+
+// Fix Screen Share Click
+document.getElementById('shareScreenBtn').addEventListener('click', (e) => {
+    window.RTC.toggleScreenShare(e.target);
 });
