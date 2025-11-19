@@ -1,41 +1,36 @@
-// Global State Object
-window.AppState = {
-    peers: {}, 
-    localStream: null,
-    screenStream: null,
-    isScreenSharing: false,
-    myPeerId: 'Me'
-};
-
-// UI Helper Functions
+// Global UI Helper
 window.UI = {
     showToast: (msg) => {
-        const div = document.createElement('div');
-        div.style.cssText = "position:fixed; top:20px; right:20px; background:#333; color:#fff; padding:10px; border-radius:5px; z-index:1000; box-shadow: 0 2px 10px rgba(0,0,0,0.3);";
-        div.textContent = msg;
-        document.body.appendChild(div);
-        setTimeout(() => div.remove(), 3000);
+        const d = document.createElement('div');
+        d.innerText = msg;
+        d.style.cssText = "position:fixed; top:20px; right:20px; background:#333; color:#fff; padding:12px 20px; border-radius:8px; z-index:9000; font-family:sans-serif; box-shadow:0 5px 15px rgba(0,0,0,0.3); animation: fadeIn 0.3s;";
+        document.body.appendChild(d);
+        setTimeout(() => d.remove(), 3000);
     },
 
-    addVideoTile: (peerId, stream) => {
-        const grid = document.getElementById('videoGrid');
-        let tile = document.getElementById(`tile-${peerId}`);
-        if (!tile) {
-            tile = document.createElement('div');
-            tile.className = 'video-tile';
-            tile.id = `tile-${peerId}`;
-            tile.innerHTML = `<video autoplay playsinline></video><div class="user-info">${peerId}</div>`;
-            grid.appendChild(tile);
-        }
-        tile.querySelector('video').srcObject = stream;
+    // Add Video Tile Logic
+    addVideoTile: (id, stream) => {
+        // Prevent duplicate videos
+        const existing = document.getElementById(`tile-${id}`);
+        if(existing) return;
+
+        const d = document.createElement('div');
+        d.className = 'video-tile';
+        d.id = `tile-${id}`;
+        d.innerHTML = `<video autoplay playsinline></video><div class="user-info">${id}</div>`;
+        document.getElementById('videoGrid').appendChild(d);
+        
+        const vid = d.querySelector('video');
+        vid.srcObject = stream;
+        // Don't mute remote stream!
+        vid.muted = false; 
     },
 
-    // === FIXED CHAT UI LOGIC ===
+    // Add Chat Message
     addChatMessage: (sender, text, isLocal) => {
         const msgBox = document.getElementById('chatMessages');
         const div = document.createElement('div');
         
-        // styling for chat bubbles
         div.style.cssText = `
             margin-bottom: 10px; 
             padding: 8px 12px; 
@@ -43,55 +38,51 @@ window.UI = {
             max-width: 80%; 
             word-wrap: break-word;
             font-size: 14px;
+            font-family: sans-serif;
             ${isLocal 
-                ? 'background: #0e71eb; color: white; align-self: flex-end; margin-left: auto;' 
-                : 'background: #f1f3f4; color: #333; align-self: flex-start;'}
+                ? 'background: #0e71eb; color: white; align-self: flex-end; margin-left: auto; border-bottom-right-radius: 2px;' 
+                : 'background: #f1f3f4; color: #333; align-self: flex-start; border-bottom-left-radius: 2px;'}
         `;
         
-        div.innerHTML = `<strong>${sender}:</strong> ${text}`;
+        div.innerHTML = `<strong>${isLocal ? 'You' : 'Peer'}:</strong> ${text}`;
         
-        // Make the container flex to support left/right bubbles
         msgBox.style.display = 'flex';
         msgBox.style.flexDirection = 'column';
-        
         msgBox.appendChild(div);
-        msgBox.scrollTop = msgBox.scrollHeight; // Auto scroll to bottom
+        msgBox.scrollTop = msgBox.scrollHeight;
+
+        // If sidebar is closed, show a dot notification (Optional)
+        if(!document.getElementById('chatSidebar').classList.contains('open')) {
+            window.UI.showToast("New Chat Message");
+        }
     }
 };
 
-// Chat Listeners
-document.getElementById('chatBtn').addEventListener('click', () => {
-    document.getElementById('chatSidebar').classList.toggle('open');
-});
+// UI Listeners
+document.getElementById('chatBtn').onclick = () => document.getElementById('chatSidebar').classList.toggle('open');
+document.getElementById('closeChatBtn').onclick = () => document.getElementById('chatSidebar').classList.remove('open');
+document.getElementById('leaveBtn').onclick = () => {
+    if(confirm("Leave Meeting?")) window.location.href = 'index.html';
+};
 
-document.getElementById('closeChatBtn').addEventListener('click', () => {
-    document.getElementById('chatSidebar').classList.remove('open');
-});
-
-document.getElementById('leaveBtn').addEventListener('click', () => {
-    if(confirm("Are you sure you want to leave?")) {
-        window.location.href = 'index.html';
-    }
-});
-
-// === SEND BUTTON LOGIC ===
-document.getElementById('sendChatBtn').addEventListener('click', () => {
+// Send Message Logic
+const sendMsg = () => {
     const input = document.getElementById('chatInput');
     const text = input.value.trim();
     
     if (text) {
-        // 1. Add to local UI
-        window.UI.addChatMessage("You", text, true);
+        // 1. Send over network
+        const sent = window.RTC.sendMessage(text);
         
-        // 2. Send to peers (simulated for DataChannel)
-        // In a real app, you iterate AppState.peers and send via dataChannel
-        // Object.values(window.AppState.peers).forEach(p => p.dataChannel.send(text));
-        
-        input.value = "";
+        // 2. If network sent or offline, show locally
+        if(sent || true) {
+            window.UI.addChatMessage("You", text, true);
+            input.value = "";
+        }
     }
-});
+};
 
-// Allow "Enter" key to send
+document.getElementById('sendChatBtn').onclick = sendMsg;
 document.getElementById('chatInput').addEventListener('keypress', (e) => {
-    if(e.key === 'Enter') document.getElementById('sendChatBtn').click();
+    if(e.key === 'Enter') sendMsg();
 });
