@@ -1,248 +1,64 @@
-/* =========================================
-   GLOBAL RESET & FONTS
-   ========================================= */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
-
-html {
-    height: 100%;
-}
+/* ... (Keep all previous CSS) ... */
 
 /* =========================================
-   1. LANDING PAGE STYLES (The Center Fix)
+   NEW: LINK GENERATION UI
    ========================================= */
 
-/* This specific class ensures the Landing Page is ALWAYS centered */
-body.centered-layout {
-    background-color: #ffffff; /* Clean White Background */
-    min-height: 100vh;         /* Force full screen height */
-    width: 100vw;
-    display: flex;             /* Flexbox */
-    align-items: center;       /* Vertical Center */
-    justify-content: center;   /* Horizontal Center */
-}
-
-/* The Card */
-.landing-card {
-    background: #ffffff;
-    width: 100%;
-    max-width: 420px;
-    padding: 48px;
-    border-radius: 0px; /* Zoom/Google style is often boxier or subtle radius */
-    text-align: center;
-    /* Simple aesthetic border/shadow */
-    border: 1px solid #dadce0; 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+.link-generation-container {
+    display: none; /* Hidden by default */
+    text-align: left;
+    background: #f8f9fa;
+    padding: 15px;
     border-radius: 8px;
+    border: 1px solid #e8eaed;
+    margin-bottom: 20px;
 }
 
-.header h1 {
-    font-size: 28px;
-    font-weight: 400; /* Thinner, elegant font */
-    color: #202124;
-    margin-bottom: 10px;
-}
-
-.header p {
-    color: #5f6368;
-    font-size: 16px;
-    margin-bottom: 40px;
-}
-
-/* Buttons */
-.btn-primary {
-    width: 100%;
-    padding: 12px 24px;
-    background-color: #1a73e8; /* Google/Zoom Blue */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.btn-primary:hover {
-    background-color: #1557b0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
-
-/* Divider */
-.divider {
-    margin: 30px 0;
-    display: flex;
-    align-items: center;
-    color: #5f6368;
-    font-size: 14px;
-}
-.divider::before, .divider::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: #dadce0;
-}
-.divider span {
-    padding: 0 15px;
-}
-
-/* Inputs */
-.input-group {
-    display: flex;
-    gap: 10px;
-}
-
-input {
-    flex: 1;
-    padding: 10px 15px;
-    border: 1px solid #dadce0;
-    border-radius: 4px;
-    font-size: 16px;
-    outline: none;
-    color: #202124;
-}
-
-input:focus {
-    border-color: #1a73e8;
-    border-width: 2px;
-    padding: 9px 14px; /* Adjust for border width change */
-}
-
-.btn-join {
-    background: transparent;
-    color: #1a73e8;
-    border: none;
+.link-label {
+    font-size: 12px;
     font-weight: 600;
-    cursor: pointer;
-    padding: 0 15px;
-}
-.btn-join:hover {
-    background: #f1f3f4;
-    border-radius: 4px;
+    color: #5f6368;
+    margin-bottom: 8px;
+    display: block;
 }
 
-/* =========================================
-   2. CALL PAGE STYLES (Dark Mode for Video)
-   ========================================= */
-
-/* Default body (used by call.html) is dark */
-body:not(.centered-layout) {
-    background-color: #202124;
-    color: white;
-    height: 100vh;
+.link-box {
     display: flex;
-    flex-direction: column;
-}
-
-.loading-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: #202124;
-    z-index: 999;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-}
-.loading-spinner {
-    border: 3px solid rgba(255,255,255,0.2);
-    border-top: 3px solid #8ab4f8;
-    border-radius: 50%;
-    width: 40px; height: 40px;
-    animation: spin 1s linear infinite;
+    gap: 8px;
     margin-bottom: 15px;
 }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-.video-grid-container {
-    flex: 1;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 15px;
-    padding: 20px;
-    overflow-y: auto;
+.link-box input {
+    background: #fff;
+    color: #3c4043;
+    font-size: 13px;
+    font-family: monospace; /* Makes code easier to read */
 }
 
-.video-tile {
-    background: #3c4043;
-    border-radius: 8px;
-    overflow: hidden;
-    position: relative;
-    aspect-ratio: 16/9;
-    border: 1px solid #5f6368;
-}
-
-video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.user-info {
-    position: absolute;
-    bottom: 10px; left: 10px;
-    background: rgba(0,0,0,0.6);
-    padding: 4px 8px;
+.btn-copy {
+    background: #fff;
+    border: 1px solid #dadce0;
     border-radius: 4px;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.control-bar {
-    background: #202124;
-    padding: 15px;
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    border-top: 1px solid #3c4043;
-}
-
-.control-bar button {
-    background: #3c4043;
-    color: #e8eaed;
-    border: none;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%; /* Circle buttons */
     cursor: pointer;
-    font-size: 20px; /* Icons size */
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 0 12px;
+    font-size: 16px;
     transition: 0.2s;
 }
-
-.control-bar button:hover {
-    background: #5f6368;
+.btn-copy:hover {
+    background: #f1f3f4;
+    border-color: #d2d4d7;
 }
 
-#leaveBtn {
-    background-color: #ea4335;
+.btn-start {
+    width: 100%;
+    padding: 12px;
+    background-color: #1a73e8;
     color: white;
-    width: 60px;
-    border-radius: 30px; /* Pill shape for hangup */
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
 }
-
-/* Chat Sidebar */
-.chat-sidebar {
-    position: fixed;
-    top: 0; right: -320px;
-    width: 320px; height: 100%;
-    background: #fff;
-    color: #202124;
-    transition: 0.3s;
-    display: flex;
-    flex-direction: column;
-    z-index: 100;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+.btn-start:hover {
+    background-color: #1557b0;
 }
-.chat-sidebar.open { right: 0; }
-.chat-header { padding: 15px; border-bottom: 1px solid #dadce0; display: flex; justify-content: space-between; }
-.chat-messages { flex: 1; padding: 15px; overflow-y: auto; }
-.chat-input-area { padding: 15px; border-top: 1px solid #dadce0; display: flex; gap: 10px; }
-.chat-input-area input { padding: 8px; border: 1px solid #dadce0; }
