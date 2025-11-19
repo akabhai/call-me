@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Meeting</title>
-    <!-- IMPORTANT: This links the CSS file -->
     <link rel="stylesheet" href="style.css">
 </head>
-<!-- This class triggers the centering CSS -->
 <body class="centered-layout">
 
     <div class="landing-card">
@@ -16,13 +14,14 @@
             <p>Secure, peer-to-peer video chat.</p>
         </div>
 
-        <button id="createRoomBtn" class="btn-primary">
+        <!-- 1. Trigger Button -->
+        <button id="openSettingsBtn" class="btn-primary">
             New Meeting
         </button>
 
-        <!-- Link Generation Area (Hidden initially) -->
+        <!-- 2. Link Generation Area (Hidden initially) -->
         <div id="linkArea" class="link-generation-container">
-            <span class="link-label">Share this link to invite others:</span>
+            <span class="link-label">Share this invite link:</span>
             
             <div class="link-box">
                 <input type="text" id="generatedLinkInput" readonly>
@@ -44,32 +43,130 @@
         </div>
     </div>
 
+    <!-- ============================ -->
+    <!-- NEW: SETTINGS MODAL POPUP    -->
+    <!-- ============================ -->
+    <div id="settingsModal" class="modal-backdrop">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Meeting Settings</h2>
+            </div>
+
+            <!-- Setting 1: Participant Limit -->
+            <div class="form-group">
+                <span class="form-label">Participant Limit</span>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="limitType" value="unlimited" checked onchange="toggleLimitInput(false)"> 
+                        Unlimited
+                    </label>
+                    <label>
+                        <input type="radio" name="limitType" value="custom" onchange="toggleLimitInput(true)"> 
+                        Specific Number
+                    </label>
+                </div>
+                <input type="number" id="limitInput" class="modal-input" placeholder="e.g. 5" min="2" max="50" disabled>
+            </div>
+
+            <!-- Setting 2: Start Time -->
+            <div class="form-group">
+                <span class="form-label">Scheduled Start Time (Optional)</span>
+                <input type="datetime-local" id="startTimeInput" class="modal-input">
+            </div>
+
+            <!-- Setting 3: Room Password (Optional) -->
+            <div class="form-group">
+                <span class="form-label">Room Password (Optional)</span>
+                <input type="text" id="passcodeInput" class="modal-input" placeholder="Leave empty for open room">
+            </div>
+
+            <div class="modal-actions">
+                <button id="cancelModalBtn" class="btn-cancel">Cancel</button>
+                <button id="generateLinkBtn" class="btn-confirm">Create Meeting</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const createBtn = document.getElementById('createRoomBtn');
+        // UI Elements
+        const modal = document.getElementById('settingsModal');
+        const openModalBtn = document.getElementById('openSettingsBtn');
+        const cancelModalBtn = document.getElementById('cancelModalBtn');
+        const generateBtn = document.getElementById('generateLinkBtn');
+        
         const linkArea = document.getElementById('linkArea');
         const linkInput = document.getElementById('generatedLinkInput');
         const copyBtn = document.getElementById('copyBtn');
         const startBtn = document.getElementById('startMeetingBtn');
         const joinBtn = document.getElementById('joinRoomBtn');
 
-        // 1. Generate Clean URL Logic
-        createBtn.addEventListener('click', () => {
+        // Inputs
+        const limitInput = document.getElementById('limitInput');
+        const startTimeInput = document.getElementById('startTimeInput');
+        const passcodeInput = document.getElementById('passcodeInput');
+
+        // 1. Open/Close Modal Logic
+        openModalBtn.addEventListener('click', () => {
+            modal.style.display = 'flex';
+        });
+
+        cancelModalBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        // Helper to enable/disable number input
+        window.toggleLimitInput = (enable) => {
+            if(enable) {
+                limitInput.disabled = false;
+                limitInput.focus();
+            } else {
+                limitInput.disabled = true;
+                limitInput.value = "";
+            }
+        };
+
+        // 2. Generate Logic (The core logic)
+        generateBtn.addEventListener('click', () => {
+            // Basic Room ID
             const roomId = Math.random().toString(36).substring(2, 12);
             
-            // Clean URL generation for GitHub Pages or Localhost
-            const currentPath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-            const fullLink = `${currentPath}call.html?room=${roomId}`;
+            // Get Values
+            let params = `?room=${roomId}`;
+            
+            // Add Limit
+            if(!limitInput.disabled && limitInput.value) {
+                params += `&limit=${limitInput.value}`;
+            }
 
-            createBtn.style.display = 'none';
-            linkArea.style.display = 'block';
+            // Add Time
+            if(startTimeInput.value) {
+                // Store as timestamp
+                const timestamp = new Date(startTimeInput.value).getTime();
+                params += `&time=${timestamp}`;
+            }
+
+            // Add Passcode (Simple encoding)
+            if(passcodeInput.value.trim()) {
+                params += `&pass=${encodeURIComponent(passcodeInput.value.trim())}`;
+            }
+
+            // Construct URL
+            const currentPath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+            const fullLink = `${currentPath}call.html${params}`;
+
+            // Update UI
+            modal.style.display = 'none'; // Hide Modal
+            openModalBtn.style.display = 'none'; // Hide "New Meeting"
+            linkArea.style.display = 'block'; // Show Link Area
             linkInput.value = fullLink;
 
+            // Setup Start Button
             startBtn.onclick = () => {
                 window.location.href = fullLink;
             };
         });
 
-        // 2. Copy Logic
+        // 3. Copy Logic
         copyBtn.addEventListener('click', () => {
             linkInput.select();
             linkInput.setSelectionRange(0, 99999);
@@ -80,12 +177,12 @@
             });
         });
 
-        // 3. Join Logic
+        // 4. Join Logic
         joinBtn.addEventListener('click', () => {
             const val = document.getElementById('joinLinkInput').value.trim();
             if(!val) return alert("Please enter a link");
 
-            if(val.includes('http')) {
+            if(val.includes('http') || val.includes('call.html')) {
                 window.location.href = val;
             } else {
                 const currentPath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
