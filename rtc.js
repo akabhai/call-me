@@ -1,136 +1,133 @@
-// Ensure global state exists if ui.js hasn't loaded it yet
+// Global State
 if (!window.AppState) {
-    window.AppState = { peers: {}, localStream: null, myPeerId: 'Me' };
+    window.AppState = { 
+        localStream: null, 
+        myPeerId: null, 
+        peerObj: null,
+        connections: {} // To track multiple users if needed
+    };
 }
 
 window.RTC = {
-    // Initialize Camera & Microphone
+    // 1. Initialize Camera
     initMedia: async () => {
         try {
-            const statusText = document.getElementById('loadingStatus');
-            if (statusText) statusText.textContent = "Requesting Camera Access...";
-            
-            // 1. Get the Stream
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: true, 
-                audio: true 
-            });
-            
-            // 2. Save Stream to Global State
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             window.AppState.localStream = stream;
-            
-            // 3. Show in Local Video Tile
-            const localVid = document.getElementById('localVideo');
-            if (localVid) {
-                localVid.srcObject = stream;
-                // Mute local video to prevent feedback loop
-                localVid.muted = true;
-            }
-            
-            if (statusText) statusText.textContent = "Media Active!";
-
-            // 4. === THE FIX: FORCE HIDE LOADING SCREEN ===
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) {
-                overlay.style.display = 'none';
-            }
-
+            document.getElementById('localVideo').srcObject = stream;
+            document.getElementById('localVideo').muted = true; // Mute self
             return true;
-
         } catch (err) {
-            console.error("Media Error:", err);
-            alert("Camera Error: " + err.name + "\nPlease click the lock icon in your URL bar to allow permissions, then refresh.");
-            if (statusText) statusText.textContent = "Permission Denied";
+            alert("Camera Access Denied. Please allow permissions.");
             return false;
         }
     },
 
-    // Create WebRTC Peer Connection (Standard Boilerplate)
-    createPeerConnection: (peerId) => {
-        const pc = new RTCPeerConnection({
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    // 2. Connect to Room (Real Networking)
+    connectToRoom: (roomId) => {
+        console.log("Attempting to join room:", roomId);
+        
+        // Initialize PeerJS
+        const peer = new Peer(roomId, {
+            debug: 2
         });
 
-        // Add local tracks to the connection
-        if (window.AppState.localStream) {
-            window.AppState.localStream.getTracks().forEach(track => {
-                pc.addTrack(track, window.AppState.localStream);
-            });
-        }
+        window.AppState.peerObj = peer;
 
-        // Handle incoming remote tracks
-        pc.ontrack = (event) => {
-            if (window.UI && window.UI.addVideoTile) {
-                window.UI.addVideoTile(peerId, event.streams[0]);
+        // CASE A: I am the HOST (First one here)
+        peer.on('open', (id) => {
+            window.AppState.myPeerId = id;
+            window.UI.showToast("You created the room. Waiting for friend...");
+            console.log("Room Created with ID:", id);
+        });
+
+        // CASE B: I am the GUEST (Room already exists)
+        peer.on('error', (err) => {
+            if (err.type === 'unavailable-id') {
+                // The ID is taken, which means the Host is already there.
+                // Let's create a new random ID for ourselves and connect to the Host.
+                console.log("Room exists. Joining as guest...");
+                window.RTC.joinAsGuest(roomId);
+            } else {
+                console.error("PeerJS Error:", err);
             }
-        };
+        });
 
-        // Save PC to state
-        if (!window.AppState.peers[peerId]) {
-            window.AppState.peers[peerId] = {};
-        }
-        window.AppState.peers[peerId].pc = pc;
+        // CASE C: Someone calls ME (I answer)
+        peer.on('call', (call) => {
+            console.log("Incoming call...");
+            // Answer with my stream
+            call.answer(window.AppState.localStream);
+            // Handle their stream
+            call.on('stream', (remoteStream) => {
+                window.UI.addVideoTile(call.peer, remoteStream);
+            });
+        });
+    },
 
-        return pc;
+    // Logic for the Guest to call the Host
+    joinAsGuest: (hostRoomId) => {
+        const guestPeer = new Peer(); // Get random ID
+
+        guestPeer.on('open', (id) => {
+            window.AppState.myPeerId = id;
+            window.UI.showToast("Connected! Joining room...");
+            
+            // Call the Host
+            const call = guestPeer.call(hostRoomId, window.AppState.localStream);
+            
+            call.on('stream', (remoteStream) => {
+                window.UI.addVideoTile("Host", remoteStream);
+            });
+        });
+
+        guestPeer.on('call', (call) => {
+             call.answer(window.AppState.localStream);
+             call.on('stream', (rs) => window.UI.addVideoTile(call.peer, rs));
+        });
+
+        window.AppState.peerObj = guestPeer;
     },
 
     // Screen Share Logic
-    toggleScreenShare: async (btnElement) => {
+    toggleScreenShare: async (btn) => {
         try {
-            // If we implement full toggling, we check a flag here.
-            // For now, request display media:
             const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-            
-            // Show on local video
-            const localVid = document.getElementById('localVideo');
-            if (localVid) localVid.srcObject = stream;
+            const videoTrack = stream.getVideoTracks()[0];
 
-            // Track ended listener (user clicks "Stop Sharing" in browser UI)
-            stream.getVideoTracks()[0].onended = () => {
-                // Revert to camera
-                if (localVid) localVid.srcObject = window.AppState.localStream;
+            // Show locally
+            document.getElementById('localVideo').srcObject = stream;
+
+            // Replace track in all active connections
+            if(window.AppState.peerObj) {
+                // PeerJS specific track replacement is complex, 
+                // for this simple version we rely on the connection being established.
+                // (Full renegotiation requires more complex logic, but this will show locally)
+            }
+
+            videoTrack.onended = () => {
+                document.getElementById('localVideo').srcObject = window.AppState.localStream;
             };
-
-        } catch (e) {
+        } catch(e) {
             console.log("Screen share cancelled");
         }
     }
 };
 
-// ===============================
-// BUTTON EVENT LISTENERS
-// ===============================
+// Button Listeners
+document.getElementById('toggleMicBtn').onclick = (e) => {
+    if(!window.AppState.localStream) return;
+    const t = window.AppState.localStream.getAudioTracks()[0];
+    t.enabled = !t.enabled;
+    e.target.innerText = t.enabled ? "🎤" : "🔇";
+};
 
-// Toggle Microphone
-const micBtn = document.getElementById('toggleMicBtn');
-if (micBtn) {
-    micBtn.addEventListener('click', (e) => {
-        if (!window.AppState.localStream) return;
-        const track = window.AppState.localStream.getAudioTracks()[0];
-        if (track) {
-            track.enabled = !track.enabled;
-            e.target.innerText = track.enabled ? "🎤" : "🔇";
-        }
-    });
-}
+document.getElementById('toggleCamBtn').onclick = (e) => {
+    if(!window.AppState.localStream) return;
+    const t = window.AppState.localStream.getVideoTracks()[0];
+    t.enabled = !t.enabled;
+    e.target.innerText = t.enabled ? "📹" : "📷";
+};
 
-// Toggle Camera
-const camBtn = document.getElementById('toggleCamBtn');
-if (camBtn) {
-    camBtn.addEventListener('click', (e) => {
-        if (!window.AppState.localStream) return;
-        const track = window.AppState.localStream.getVideoTracks()[0];
-        if (track) {
-            track.enabled = !track.enabled;
-            e.target.innerText = track.enabled ? "📹" : "📷";
-        }
-    });
-}
-
-// Share Screen
-const shareBtn = document.getElementById('shareScreenBtn');
-if (shareBtn) {
-    shareBtn.addEventListener('click', (e) => {
-        window.RTC.toggleScreenShare(e.target);
-    });
-}
+document.getElementById('shareScreenBtn').onclick = (e) => window.RTC.toggleScreenShare(e.target);
+document.getElementById('leaveBtn').onclick = () => window.location.href = 'index.html';
