@@ -5,57 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>In Call</title>
     <link rel="stylesheet" href="style.css">
+    <!-- REQUIRED FOR REAL NETWORKING -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
 
-    <!-- =========================================
-         1. GATEKEEPER (BLOCKS VIEW IF LOCKED)
-         ========================================= -->
+    <!-- GATEKEEPER -->
     <div id="gatekeeper" class="gatekeeper-overlay" style="display: none;">
         <div class="gatekeeper-card">
-            <!-- Icon -->
             <h1 id="gateIcon" style="font-size:40px; margin-bottom:10px;">🔒</h1>
-            
-            <!-- Title -->
             <h2 id="gateTitle">Locked</h2>
             <p id="gateDesc" style="color:#aaa; margin-bottom:20px;">Authentication Required</p>
             
-            <!-- PASSWORD FORM (Hidden unless needed) -->
             <div id="passEntryArea" style="display:none;">
-                <input type="password" id="passInput" class="gatekeeper-input" placeholder="Enter Meeting Password">
+                <input type="password" id="passInput" class="gatekeeper-input" placeholder="Enter Password">
                 <button id="unlockBtn" class="btn-unlock">Enter Meeting</button>
                 <p id="passError" class="error-msg">Incorrect Password</p>
             </div>
 
-            <!-- TIMER COUNTDOWN (Hidden unless needed) -->
             <div id="timerArea" style="display:none;">
                 <h1 id="countdown" style="font-size:32px; font-family:monospace;">00:00:00</h1>
             </div>
         </div>
     </div>
 
-    <!-- =========================================
-         2. LOADING SCREEN (REMOVED BY JS)
-         ========================================= -->
+    <!-- LOADING -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner"></div>
-        <p id="loadingStatus">Initializing...</p>
+        <p id="loadingStatus">Initializing Connection...</p>
     </div>
 
-    <!-- =========================================
-         3. MAIN VIDEO GRID
-         ========================================= -->
+    <!-- VIDEO GRID -->
     <div class="video-grid-container" id="videoGrid">
-        <!-- Local User -->
         <div class="video-tile local-stream">
             <video id="localVideo" autoplay muted playsinline></video>
             <div class="user-info">You</div>
         </div>
     </div>
 
-    <!-- =========================================
-         4. CONTROLS BAR
-         ========================================= -->
+    <!-- CONTROLS -->
     <div class="control-bar">
         <button id="toggleMicBtn" title="Microphone">🎤</button>
         <button id="toggleCamBtn" title="Camera">📹</button>
@@ -64,14 +52,9 @@
         <button id="leaveBtn" title="Leave Call">❌</button>
     </div>
 
-    <!-- =========================================
-         5. CHAT SIDEBAR
-         ========================================= -->
+    <!-- CHAT -->
     <div class="chat-sidebar" id="chatSidebar">
-        <div class="chat-header">
-            <h3>Chat</h3>
-            <button id="closeChatBtn">×</button>
-        </div>
+        <div class="chat-header"><h3>Chat</h3><button id="closeChatBtn">×</button></div>
         <div class="chat-messages" id="chatMessages"></div>
         <div class="chat-input-area">
             <input type="text" id="chatInput" placeholder="Message...">
@@ -79,99 +62,73 @@
         </div>
     </div>
 
-    <!-- SCRIPTS -->
     <script src="ui.js"></script>
     <script src="rtc.js"></script>
 
     <script>
-        // =========================================
-        // INLINE LOGIC: HANDLE URL PARAMS & GATEKEEPER
-        // =========================================
         document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
-            const roomId = params.get('room');
-            const auth = params.get('auth'); // Encoded Password
-            const t = params.get('t');       // Timestamp
+            // Use a unique prefix to ensure clean ID
+            const roomId = "room-" + params.get('room');
+            const auth = params.get('auth');
+            const t = params.get('t');
 
             const gate = document.getElementById('gatekeeper');
-            const gateIcon = document.getElementById('gateIcon');
-            const gateTitle = document.getElementById('gateTitle');
-            const gateDesc = document.getElementById('gateDesc');
 
-            // --- CHECK 1: IS IT SCHEDULED? ---
+            // 1. Check Time
             if (t) {
-                const scheduledTime = parseInt(t);
-                const now = Date.now();
-
-                if (now < scheduledTime) {
-                    // Show Gatekeeper Timer
+                const scheduled = parseInt(t);
+                if (Date.now() < scheduled) {
                     gate.style.display = 'flex';
-                    gateIcon.innerText = "⏳";
-                    gateTitle.innerText = "Meeting Scheduled";
-                    gateDesc.innerText = "Please wait for the start time.";
+                    document.getElementById('gateIcon').innerText = "⏳";
+                    document.getElementById('gateTitle').innerText = "Scheduled";
+                    document.getElementById('gateDesc').innerText = "Please wait...";
                     document.getElementById('timerArea').style.display = 'block';
-
-                    // Start Countdown
-                    const timerInterval = setInterval(() => {
-                        const diff = scheduledTime - Date.now();
-                        
-                        // If time reached, reload page to bypass check
-                        if (diff <= 0) {
-                            clearInterval(timerInterval);
-                            location.reload(); 
-                        }
-
-                        // Calc Time
+                    setInterval(() => {
+                        const diff = scheduled - Date.now();
+                        if (diff <= 0) location.reload();
                         const m = Math.floor((diff % (1000*60*60)) / (1000*60));
                         const s = Math.floor((diff % (1000*60)) / 1000);
-                        document.getElementById('countdown').innerText = `Starts in: ${m}m ${s}s`;
+                        document.getElementById('countdown').innerText = `${m}m ${s}s`;
                     }, 1000);
-                    
-                    return; // STOP EVERYTHING ELSE
+                    return;
                 }
             }
 
-            // --- CHECK 2: IS THERE A PASSWORD? ---
+            // 2. Check Password
             if (auth) {
-                // Show Gatekeeper Password Input
                 gate.style.display = 'flex';
                 document.getElementById('passEntryArea').style.display = 'block';
-                
                 document.getElementById('unlockBtn').onclick = () => {
-                    const userVal = document.getElementById('passInput').value;
-                    // Encode user input to see if it matches URL
-                    if (btoa(userVal) === auth) {
-                        // Correct! Hide Gatekeeper and Start
+                    if (btoa(document.getElementById('passInput').value) === auth) {
                         gate.style.display = 'none';
                         startApp(roomId);
                     } else {
-                        // Wrong!
                         document.getElementById('passError').style.display = 'block';
-                        document.getElementById('passInput').style.borderColor = 'red';
                     }
                 };
-                return; // STOP EVERYTHING ELSE
+                return;
             }
 
-            // --- CHECK 3: START NORMALLY ---
+            // 3. Start
             startApp(roomId);
         });
 
-        // START THE APPLICATION
-        function startApp(roomId) {
-            if (!roomId) {
-                alert("No Room ID found. Redirecting to Home.");
+        async function startApp(roomId) {
+            if (!roomId || roomId === "room-null") {
+                alert("Invalid Link");
                 window.location.href = "index.html";
                 return;
             }
 
-            // Call initMedia from rtc.js
-            // This function will handle hiding the loading screen
-            window.RTC.initMedia();
+            // Initialize Media First
+            await window.RTC.initMedia();
             
-            if(window.UI && window.UI.showToast) {
-                window.UI.showToast("Connected to Room: " + roomId);
-            }
+            // Remove Loading Screen
+            document.getElementById('loadingOverlay').style.display = 'none';
+
+            // Initialize Real Networking
+            window.RTC.connectToRoom(roomId);
         }
     </script>
 </body>
