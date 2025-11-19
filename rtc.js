@@ -1,10 +1,11 @@
-// Global State
+// Ensure Global State
 if (!window.AppState) {
     window.AppState = { 
         localStream: null, 
         myPeerId: null, 
         peerObj: null,
-        connections: {} // To track multiple users if needed
+        activeCall: null, // Video Connection
+        activeConn: null  // Chat Connection
     };
 }
 
@@ -16,118 +17,193 @@ window.RTC = {
             window.AppState.localStream = stream;
             document.getElementById('localVideo').srcObject = stream;
             document.getElementById('localVideo').muted = true; // Mute self
+            
+            // Hide Loading Overlay Immediately
+            const overlay = document.getElementById('loadingOverlay');
+            if(overlay) overlay.style.display = 'none';
+            
             return true;
         } catch (err) {
-            alert("Camera Access Denied. Please allow permissions.");
+            alert("Camera Error. Please check permissions.");
             return false;
         }
     },
 
-    // 2. Connect to Room (Real Networking)
+    // 2. Connect to Room (Host/Guest Logic)
     connectToRoom: (roomId) => {
-        console.log("Attempting to join room:", roomId);
+        // Clean the ID to be URL safe
+        const safeRoomId = roomId.replace(/[^a-zA-Z0-9_-]/g, '');
         
-        // Initialize PeerJS
-        const peer = new Peer(roomId, {
-            debug: 2
+        window.UI.showToast("Connecting to network...");
+
+        // ATTEMPT 1: Try to be the HOST (Claim the Room ID)
+        const peer = new Peer(safeRoomId, {
+            debug: 2,
+            config: {
+                'iceServers': [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:global.stun.twilio.com:3478' }
+                ]
+            }
         });
 
         window.AppState.peerObj = peer;
 
-        // CASE A: I am the HOST (First one here)
+        // --- IF WE BECOME HOST ---
         peer.on('open', (id) => {
+            console.log("I am HOST. ID:", id);
             window.AppState.myPeerId = id;
-            window.UI.showToast("You created the room. Waiting for friend...");
-            console.log("Room Created with ID:", id);
+            window.UI.showToast("Room Created! Waiting for guest...");
         });
 
-        // CASE B: I am the GUEST (Room already exists)
+        // --- IF ID IS TAKEN -> WE ARE GUEST ---
         peer.on('error', (err) => {
             if (err.type === 'unavailable-id') {
-                // The ID is taken, which means the Host is already there.
-                // Let's create a new random ID for ourselves and connect to the Host.
-                console.log("Room exists. Joining as guest...");
-                window.RTC.joinAsGuest(roomId);
+                console.log("Room ID taken. Switching to GUEST mode...");
+                peer.destroy(); // Kill failed attempt
+                window.RTC.joinAsGuest(safeRoomId); // Retry as guest
             } else {
                 console.error("PeerJS Error:", err);
+                window.UI.showToast("Connection Error: " + err.type);
             }
         });
 
-        // CASE C: Someone calls ME (I answer)
+        // --- HANDLE INCOMING CONNECTIONS (As Host) ---
+        
+        // 1. Video Calls
         peer.on('call', (call) => {
-            console.log("Incoming call...");
-            // Answer with my stream
+            console.log("Incoming Video Call...");
+            window.UI.showToast("Guest Joining...");
+            
+            // Answer the call with our stream
             call.answer(window.AppState.localStream);
-            // Handle their stream
+            window.AppState.activeCall = call;
+
+            // Show their video
             call.on('stream', (remoteStream) => {
-                window.UI.addVideoTile(call.peer, remoteStream);
+                window.UI.addVideoTile("Guest", remoteStream);
             });
+        });
+
+        // 2. Chat Data Connections
+        peer.on('connection', (conn) => {
+            console.log("Incoming Chat Connection...");
+            window.RTC.setupDataConnection(conn);
         });
     },
 
-    // Logic for the Guest to call the Host
-    joinAsGuest: (hostRoomId) => {
-        const guestPeer = new Peer(); // Get random ID
-
-        guestPeer.on('open', (id) => {
-            window.AppState.myPeerId = id;
-            window.UI.showToast("Connected! Joining room...");
-            
-            // Call the Host
-            const call = guestPeer.call(hostRoomId, window.AppState.localStream);
-            
-            call.on('stream', (remoteStream) => {
-                window.UI.addVideoTile("Host", remoteStream);
-            });
-        });
-
-        guestPeer.on('call', (call) => {
-             call.answer(window.AppState.localStream);
-             call.on('stream', (rs) => window.UI.addVideoTile(call.peer, rs));
+    // 3. Guest Logic (Call the Host)
+    joinAsGuest: (hostId) => {
+        // Create a random ID for ourselves
+        const guestPeer = new Peer({
+            config: {
+                'iceServers': [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:global.stun.twilio.com:3478' }
+                ]
+            }
         });
 
         window.AppState.peerObj = guestPeer;
+
+        guestPeer.on('open', (id) => {
+            console.log("I am GUEST. My ID:", id);
+            window.AppState.myPeerId = id;
+            window.UI.showToast("Found Room. Calling Host...");
+
+            // A. CALL HOST (Video)
+            const call = guestPeer.call(hostId, window.AppState.localStream);
+            window.AppState.activeCall = call;
+
+            call.on('stream', (remoteStream) => {
+                console.log("Received Host Stream");
+                window.UI.addVideoTile("Host", remoteStream);
+            });
+
+            // B. CONNECT HOST (Chat)
+            const conn = guestPeer.connect(hostId);
+            window.RTC.setupDataConnection(conn);
+        });
+
+        guestPeer.on('error', (err) => {
+            console.error("Guest Error:", err);
+            window.UI.showToast("Connection Failed. Try refreshing.");
+        });
     },
 
-    // Screen Share Logic
+    // 4. Chat Connection Setup (Shared)
+    setupDataConnection: (conn) => {
+        window.AppState.activeConn = conn;
+
+        conn.on('open', () => {
+            console.log("Chat Channel Open");
+            window.UI.showToast("Chat Connected!");
+        });
+
+        conn.on('data', (data) => {
+            console.log("Received Data:", data);
+            // If it's a chat message object
+            if(data.type === 'chat') {
+                window.UI.addChatMessage("Peer", data.message, false);
+            }
+        });
+    },
+
+    // 5. Send Chat Message
+    sendMessage: (text) => {
+        if (window.AppState.activeConn && window.AppState.activeConn.open) {
+            window.AppState.activeConn.send({ type: 'chat', message: text });
+            return true;
+        } else {
+            window.UI.showToast("No one is connected to chat.");
+            return false;
+        }
+    },
+
+    // 6. Screen Share
     toggleScreenShare: async (btn) => {
         try {
             const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
             const videoTrack = stream.getVideoTracks()[0];
-
+            
             // Show locally
             document.getElementById('localVideo').srcObject = stream;
 
-            // Replace track in all active connections
-            if(window.AppState.peerObj) {
-                // PeerJS specific track replacement is complex, 
-                // for this simple version we rely on the connection being established.
-                // (Full renegotiation requires more complex logic, but this will show locally)
+            // Replace track for remote peer
+            if (window.AppState.activeCall) {
+                const sender = window.AppState.activeCall.peerConnection.getSenders().find((s) => s.track.kind === "video");
+                if(sender) sender.replaceTrack(videoTrack);
             }
 
+            btn.innerText = "🛑 Stop";
+
             videoTrack.onended = () => {
+                // Revert to camera
+                const camTrack = window.AppState.localStream.getVideoTracks()[0];
+                if (window.AppState.activeCall) {
+                    const sender = window.AppState.activeCall.peerConnection.getSenders().find((s) => s.track.kind === "video");
+                    if(sender) sender.replaceTrack(camTrack);
+                }
                 document.getElementById('localVideo').srcObject = window.AppState.localStream;
+                btn.innerText = "🖥";
             };
         } catch(e) {
-            console.log("Screen share cancelled");
+            console.log("Share cancelled");
         }
     }
 };
 
-// Button Listeners
+// Listeners
 document.getElementById('toggleMicBtn').onclick = (e) => {
-    if(!window.AppState.localStream) return;
     const t = window.AppState.localStream.getAudioTracks()[0];
     t.enabled = !t.enabled;
     e.target.innerText = t.enabled ? "🎤" : "🔇";
 };
 
 document.getElementById('toggleCamBtn').onclick = (e) => {
-    if(!window.AppState.localStream) return;
     const t = window.AppState.localStream.getVideoTracks()[0];
     t.enabled = !t.enabled;
     e.target.innerText = t.enabled ? "📹" : "📷";
 };
 
 document.getElementById('shareScreenBtn').onclick = (e) => window.RTC.toggleScreenShare(e.target);
-document.getElementById('leaveBtn').onclick = () => window.location.href = 'index.html';
