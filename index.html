@@ -14,14 +14,13 @@
             <p>Free, secure peer-to-peer video chat.</p>
         </div>
 
-        <!-- 1. Initial "New Meeting" Button -->
         <button id="createRoomBtn" class="btn-primary">
             New Meeting
         </button>
 
-        <!-- 2. Hidden Area: Shows Link AFTER clicking "New Meeting" -->
+        <!-- Link Generation Area -->
         <div id="linkArea" class="link-generation-container">
-            <span class="link-label">Here's your meeting link to share:</span>
+            <span class="link-label">Share this link to invite others:</span>
             
             <div class="link-box">
                 <input type="text" id="generatedLinkInput" readonly>
@@ -38,13 +37,12 @@
         </div>
 
         <div class="input-group">
-            <input type="text" id="joinMagnetLink" placeholder="Enter link code">
+            <input type="text" id="joinMagnetLink" placeholder="Paste full link here...">
             <button id="joinRoomBtn" class="btn-join">Join</button>
         </div>
     </div>
 
     <script>
-        // Elements
         const createBtn = document.getElementById('createRoomBtn');
         const linkArea = document.getElementById('linkArea');
         const linkInput = document.getElementById('generatedLinkInput');
@@ -52,29 +50,35 @@
         const startBtn = document.getElementById('startMeetingBtn');
         const joinBtn = document.getElementById('joinRoomBtn');
 
-        // 1. Generate Link Logic
+        // 1. Generate FULL URL Logic
         createBtn.addEventListener('click', () => {
-            // Generate Hash
             const roomHash = Math.random().toString(36).substring(2, 10);
+            // Raw Magnet (for internal use)
             const magnet = `magnet:?xt=urn:btih:${roomHash}&dn=CallRoom`;
+            
+            // Construct Full URL: Protocol + Host + Path to call.html
+            // This works on localhost and custom domains
+            const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+            // Ensure no double slashes if pathname ends with /
+            const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+            const fullLink = `${cleanBaseUrl}call.html?magnet=${encodeURIComponent(magnet)}`;
 
-            // Swap UI: Hide "New Meeting", Show "Link Area"
             createBtn.style.display = 'none';
             linkArea.style.display = 'block';
 
-            // Fill Input
-            linkInput.value = magnet;
+            // Show Full Link
+            linkInput.value = fullLink;
 
-            // Setup Start Button to actually go there
+            // Start Button
             startBtn.onclick = () => {
-                window.location.href = `call.html?magnet=${encodeURIComponent(magnet)}`;
+                window.location.href = fullLink;
             };
         });
 
         // 2. Copy Logic
         copyBtn.addEventListener('click', () => {
             linkInput.select();
-            linkInput.setSelectionRange(0, 99999); // Mobile support
+            linkInput.setSelectionRange(0, 99999);
             navigator.clipboard.writeText(linkInput.value).then(() => {
                 const original = copyBtn.innerHTML;
                 copyBtn.innerHTML = "✅";
@@ -82,11 +86,17 @@
             });
         });
 
-        // 3. Join Logic
+        // 3. Join Logic (Smart Parsing)
         joinBtn.addEventListener('click', () => {
-            const val = document.getElementById('joinMagnetLink').value;
-            if(val) window.location.href = `call.html?magnet=${encodeURIComponent(val)}`;
-            else alert("Please enter a link code");
+            let val = document.getElementById('joinMagnetLink').value;
+            if(!val) return alert("Please enter a link");
+
+            // If user pasted full URL, redirect to it. If magnet, construct URL.
+            if(val.includes('http') || val.includes('call.html')) {
+                window.location.href = val;
+            } else {
+                window.location.href = `call.html?magnet=${encodeURIComponent(val)}`;
+            }
         });
     </script>
 </body>
