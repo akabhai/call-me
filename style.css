@@ -487,59 +487,86 @@ video {
 }
 
 
-/* ... (Keep all previous CSS) ... */
+/* ... (Keep Gatekeeper, Modal, and General styles) ... */
 
 /* =========================================
-   NEW: PAGINATION & PERFORMANCE
+   ADVANCED DYNAMIC VIDEO GRID
    ========================================= */
-
-/* Video Grid updates for performance */
 .video-grid-container {
-    display: grid;
-    /* Max 9 videos per page (3x3) to prevent crash */
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 10px;
-    padding: 20px;
-    align-content: start;
-}
-
-/* Pagination Controls */
-.pagination-bar {
-    position: fixed;
-    bottom: 90px; /* Above control bar */
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.7);
-    padding: 8px 16px;
-    border-radius: 30px;
     display: flex;
-    gap: 15px;
-    z-index: 100;
-    color: white;
+    flex-wrap: wrap;
+    justify-content: center;
     align-items: center;
+    align-content: center;
+    gap: 10px;
+    padding: 10px;
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+    background: #000; /* Professional Black Background */
 }
 
-.page-btn {
-    background: #1a73e8;
-    border: none;
+.video-tile {
+    background: #222;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    transition: all 0.3s ease;
+    /* Default size for small meetings */
+    width: 400px;
+    height: 300px;
+    flex-grow: 1;
+}
+
+/* If we have many users, CSS changes automatically (Handled by JS class injection) */
+.video-grid-container.large-group .video-tile {
+    width: 200px;
+    height: 150px;
+}
+
+/* VIDEO FITTING (Fixes "Half Cut" heads) */
+video {
+    width: 100%;
+    height: 100%;
+    /* 'cover' fills space but cuts edges. 'contain' shows full video but black bars. */
+    object-fit: cover; 
+    transform: scaleX(-1); /* Mirror effect for self, JS handles others */
+}
+
+/* User Info Badge */
+.user-info {
+    position: absolute;
+    bottom: 8px; left: 8px;
+    background: rgba(0,0,0,0.7);
     color: white;
-    width: 30px; height: 30px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-weight: bold;
-}
-.page-btn:disabled {
-    background: #555;
-    cursor: not-allowed;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 5;
+    pointer-events: none;
 }
 
-/* Network Stats (Optional, helpful for debugging 100 users) */
-.net-stat {
+/* Active Speaker Border */
+.video-tile.speaking {
+    border: 3px solid #1a73e8;
+    box-shadow: 0 0 15px rgba(26, 115, 232, 0.5);
+}
+
+/* Controls for Video Fit */
+.video-controls {
     position: absolute;
     top: 5px; right: 5px;
-    font-size: 10px;
+    z-index: 10;
+    display: none; /* Show on hover */
+}
+.video-tile:hover .video-controls { display: block; }
+
+.btn-mini {
     background: rgba(0,0,0,0.6);
-    color: #0f0;
-    padding: 2px 4px;
+    color: white;
+    border: none;
     border-radius: 4px;
+    padding: 4px;
+    cursor: pointer;
+    font-size: 10px;
 }
