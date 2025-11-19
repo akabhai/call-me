@@ -3,46 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connect | P2P Video</title>
+    <title>Video Call</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts: Inter for that clean aesthetic look -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
-<body class="landing-body">
+<body>
 
-    <!-- Background ambient blobs for aesthetics -->
-    <div class="ambient-glow one"></div>
-    <div class="ambient-glow two"></div>
-
+    <!-- The Centered Card -->
     <div class="landing-card">
         <div class="header">
-            <div class="icon-box">📹</div>
-            <h1>Connect.</h1>
-            <p>Secure, serverless, peer-to-peer video chat.</p>
+            <h1>Video Call</h1>
+            <p>Free, peer-to-peer video conferencing.</p>
         </div>
 
-        <div class="actions">
-            <button id="createRoomBtn" class="btn-primary">
-                <span>+</span> Create New Room
-            </button>
-            
-            <div class="divider">
-                <span>or join via link</span>
-            </div>
+        <button id="createRoomBtn" class="btn-primary">
+            New Meeting
+        </button>
 
-            <div class="input-wrapper">
-                <input type="text" id="joinMagnetLink" placeholder="Paste magnet link here...">
-                <button id="joinRoomBtn" class="btn-icon">
-                    →
-                </button>
-            </div>
+        <div class="divider">
+            <span>or join with link</span>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="joinMagnetLink" placeholder="Enter link code">
+            <button id="joinRoomBtn" class="btn-secondary">Join</button>
         </div>
     </div>
 
     <script>
         document.getElementById('createRoomBtn').addEventListener('click', () => {
-            // Generate a cleaner random ID
-            const roomHash = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
+            const roomHash = Math.random().toString(36).substring(2, 10);
             const magnet = `magnet:?xt=urn:btih:${roomHash}&dn=CallRoom`;
             window.location.href = `call.html?magnet=${encodeURIComponent(magnet)}`;
         });
