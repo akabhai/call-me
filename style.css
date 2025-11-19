@@ -473,3 +473,15 @@ video {
     box-shadow: 0 0 20px rgba(26, 115, 232, 0.6);
     z-index: 10;
 }
+
+
+/* ... (Existing CSS) ... */
+
+/* New: Picture-in-Picture Button */
+#pipBtn {
+    background: #444;
+    color: white;
+}
+#pipBtn:hover {
+    background: #666;
+}
