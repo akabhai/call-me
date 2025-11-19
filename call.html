@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P Call</title>
+    <style>
+        /*
+        ====================================================
+        ADVANCED CSS REQUIREMENTS (ABSTRACTED)
+        ====================================================
+        - Glassmorphism cards
+        - Animated gradients
+        - Smooth transitions (0.2–0.3s)
+        - Button ripple effects
+        - Glow ring around speaking video tiles
+        - CSS variables for theme
+        - Media queries for responsive layout
+        - CSS grid for videos
+        - Floating control bar with blur background
+        - Sliding chat sidebar
+        - Animated modals
+        */
+        :root {
+            --primary-color: #0ff; /* Neon blue */
+            --secondary-color: #f0f; /* Neon pink */
+            --tertiary-color: #0f0; /* Neon green */
+            --bg-dark: #1a1a2e; /* Dark blue-purple */
+            --bg-light: #f0f2f5; /* Light grey */
+            --card-bg-dark: rgba(255, 255, 255, 0.1);
+            --card-bg-light: rgba(255, 255, 255, 0.8);
+            --text-dark: #e0e0e0;
+            --text-light: #333;
+            --border-glow-primary: 0 0 10px var(--primary-color);
+            --border-glow-secondary: 0 0 10px var(--secondary-color);
+            --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.2);
+            --transition-speed: 0.3s ease;
+
+            /* Theming variables - updated by JS */
+            --current-bg: var(--bg-dark);
+            --current-text: var(--text-dark);
+            --current-card-bg: var(--card-bg-dark);
+            --current-input-bg: rgba(255, 255, 255, 0.15);
+            --current-input-border: rgba(255, 255, 255, 0.3);
+            --current-button-bg: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: var(--current-bg);
+            color: var(--current-text);
+            transition: background-color var(--transition-speed), color var(--transition-speed);
+            overflow: hidden;
+        }
+
+        .video-grid-container {
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Responsive grid */
+            gap: 15px;
+            padding: 20px;
+            overflow-y: auto;
+            align-content: start;
+            justify-content: center;
+        }
+
+        .video-tile {
+            position: relative;
+            background: var(--current-card-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all var(--transition-speed);
+        }
+        .video-tile.speaking {
+            box-shadow: var(--border-glow-primary);
+            border-color: var(--primary-color);
+        }
+        .video-tile video {
+            width: 100%;
+            height: auto;
+            max-height: 100%;
+            display: block;
+            border-radius: 15px; /* Matches parent for rounded corners */
+            object-fit: cover; /* Ensures video covers tile without distortion */
+            background-color: black; /* Fallback for no video */
+        }
+        .video-tile .user-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            color: white;
+        }
+        .video-tile .user-info .mic-status {
+            margin-right: 5px;
+            width: 16px;
+            height: 16px;
+            background-color: green; /* Active */
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 5px green;
+        }
+        .video-tile .user-info .mic-status.muted {
+            background-color: red;
+            box-shadow: 0 0 5px red;
+        }
+
+        .control-bar {
+            position: sticky;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4); /* Glassmorphism base */
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            flex-wrap: wrap;
+        }
+        .control-bar button, .control-bar select {
+            background: var(--current-button-bg);
+            color: var(--current-text);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all var(--transition-speed);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.5); /* Primary glow */
+        }
+        .control-bar button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 12px rgba(0, 255, 255, 0.7);
+        }
+        /* Ripple effect for buttons (CSS only) */
+        .control-bar button::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            width: 10px;
+            height: 10px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: transform 0.8s ease-out, opacity 0.8s ease-out;
+        }
+        .control-bar button:active::after {
+            transform: translate(-50%, -50%) scale(15);
+            opacity: 1;
+            transition: 0s;
+        }
+
+        /* Chat sidebar */
+        .chat-sidebar {
+            position: fixed;
+            top: 0;
+            right: -350px; /* Hidden by default */
+            width: 320px;
+            height: 100%;
+            background: var(--current-card-bg);
+            backdrop-filter: blur(10px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3);
+            z-index: 101;
+            display: flex;
+            flex-direction: column;
+            transition: right var(--transition-speed);
+        }
+        .chat-sidebar.open {
+            right: 0;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .chat-input-area {
+            padding: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input-area input {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--current-input-border);
+            background: var(--current-input-bg);
+            color: var(--current-text);
+            outline: none;
+        }
+        .chat-input-area button {
+            background: var(--tertiary-color);
+            box-shadow: 0 0 8px var(--tertiary-color);
+            padding: 10px 15px;
+        }
+
+        /* File transfer modal/toast (simplified) */
+        .file-transfer-toast {
+            position: fixed;
+            bottom: 80px; /* Above control bar */
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: none;
+            z-index: 110;
+            box-shadow: var(--shadow-soft);
+        }
+
+        /* Toast notifications */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-soft);
+            z-index: 200;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity var(--transition-speed), transform var(--transition-speed);
+        }
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Screen sharing border glow */
+        .video-tile.screen-share {
+            box-shadow: 0 0 20px var(--tertiary-color), inset 0 0 10px var(--tertiary-color);
+            border-color: var(--tertiary-color);
+        }
+
+        /* Device selection modal (simplified) */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        .modal-content {
+            background: var(--current-card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: var(--shadow-soft);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        /* OLED Pure Black Mode */
+        body.oled-mode {
+            background: #000000;
+            color: #f0f0f0;
+        }
+        body.oled-mode .control-bar,
+        body.oled-mode .chat-sidebar,
+        body.oled-mode .video-tile,
+        body.oled-mode .modal-content {
+            background: rgba(0, 0, 0, 0.9);
+            border-color: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+        }
+
+        /* Theme adjustments */
+        body.light-mode {
+            --current-bg: var(--bg-light);
+            --current-text: var(--text-light);
+            --current-card-bg: var(--card-bg-light);
+            --current-input-bg: rgba(0, 0, 0, 0.05);
+            --current-input-border: rgba(0, 0, 0, 0.2);
+            --current-button-bg: linear-gradient(45deg, #1e90ff, #8a2be2); /* Blue-violet */
+            color: var(--current-text);
+        }
+        body.blue-theme {
+            --primary-color: #007bff;
+            --secondary-color: #00c0ff;
+            --tertiary-color: #28a745;
+        }
+        body.purple-theme {
+            --primary-color: #8a2be2;
+            --secondary-color: #da70d6;
+            --tertiary-color: #ff1493;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 500;
+            color: var(--primary-color);
+            font-size: 1.5em;
+            text-shadow: 0 0 10px var(--primary-color);
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 255, 255, 0.2);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Picture-in-Picture specific style */
+        .pip-mode .video-tile.local-stream {
+            position: fixed;
+            bottom: 100px; /* Above control bar */
+            right: 20px;
+            width: 180px;
+            height: 100px;
+            z-index: 105;
+            border: 2px solid var(--primary-color);
+            border-radius: 10px;
+            box-shadow: var(--border-glow-primary);
+        }
+        .pip-mode .video-tile.local-stream video {
+            border-radius: 8px;
+        }
+        .pip-mode .video-tile.local-stream .user-info {
+            display: none; /* Hide info in PiP */
+        }
+
+        /* Fullscreen Mode */
+        body.fullscreen-mode .control-bar {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        body.fullscreen-mode:hover .control-bar {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Media Queries for Responsiveness */
+        @media (max-width: 768px) {
+            .video-grid-container {
+                grid-template-columns: 1fr; /* Single column on mobile */
+                padding: 10px;
+            }
+            .control-bar {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px;
+            }
+            .chat-sidebar {
+                width: 100%; /* Full width on small screens */
+                right: -100%;
+            }
+            .chat-sidebar.open {
+                right: 0;
+            }
+            .pip-mode .video-tile.local-stream {
+                width: 120px;
+                height: 70px;
+                bottom: 80px;
+                right: 10px;
+            }
+        }
+        @media (min-width: 1600px) { /* Ultrawide */
+            .video-grid-container {
+                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p>Connecting to P2P swarm...</p>
+    </div>
+
+    <div class="video-grid-container" id="videoGrid">
+        <!-- Local video stream will go here -->
+        <div class="video-tile local-stream" id="localVideoTile">
+            <video id="localVideo" autoplay muted playsinline></video>
+            <div class="user-info">
+                <span class="mic-status" id="localMicStatus"></span>
+                <span class="user-name">You</span>
+                <span class="volume-meter"></span>
+            </div>
+        </div>
+        <!-- Remote video streams will be dynamically added here -->
+    </div>
+
+    <div class="control-bar">
+        <button id="toggleMicBtn">🎤 Mute</button>
+        <button id="toggleCamBtn">📹 Off</button>
+        <button id="shareScreenBtn">🖥 Share Screen</button>
+        <button id="chatBtn">💬 Chat</button>
+        <button id="fileTransferBtn">📁 File</button>
+        <button id="recordBtn">⏺ Record</button>
+        <button id="settingsBtn">⚙ Settings</button>
+        <button id="themeBtn">🎨 Theme</button>
+        <span id="peerCount">Peers: 1</span>
+        <span id="iceQuality">Conn: ?</span>
+    </div>
+
+    <div class="chat-sidebar" id="chatSidebar">
+        <div class="chat-header" style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+            <h3>Chat</h3>
+            <button id="closeChatBtn" style="background: none; border: none; color: var(--primary-color); font-size: 1.5em; cursor: pointer;">&times;</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <!-- Chat bubbles will appear here -->
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Type a message...">
+            <button id="sendChatBtn">Send</button>
+        </div>
+    </div>
+
+    <div class="file-transfer-toast" id="fileTransferToast">
+        <span>Receiving file...</span>
+        <progress id="fileProgressBar" value="0" max="100"></progress>
+        <button id="cancelFileTransferBtn">Cancel</button>
+    </div>
+
+    <!-- Device Selection Modal -->
+    <div class="modal" id="deviceModal">
+        <div class="modal-content">
+            <h3>Device Settings</h3>
+            <p>Camera: <select id="cameraSelector"></select></p>
+            <p>Microphone: <select id="micSelector"></select></p>
+            <p>Speaker: <select id="speakerSelector"></select></p>
+            <p>
+                <label for="noiseSuppression">Noise Suppression:</label>
+                <input type="checkbox" id="noiseSuppression" checked>
+            </p>
+            <p>
+                <label for="echoCancellation">Echo Cancellation:</label>
+                <input type="checkbox" id="echoCancellation" checked>
+            </p>
+            <button id="closeDeviceModalBtn">Apply & Close</button>
+        </div>
+    </div>
+
+    <!-- Advanced Controls Modal (Simplified) -->
+    <div class="modal" id="advancedModal">
+        <div class="modal-content">
+            <h3>Advanced Controls</h3>
+            <p>
+                <label for="blurBackground">Blur Background:</label>
+                <input type="checkbox" id="blurBackground"> (WebGL Placeholder)
+            </p>
+            <p>
+                <label for="brightnessSlider">Brightness:</label>
+                <input type="range" id="brightnessSlider" min="0.5" max="1.5" step="0.01" value="1">
+            </p>
+            <p>
+                <label for="contrastSlider">Contrast:</label>
+                <input type="range" id="contrastSlider" min="0.5" max="1.5" step="0.01" value="1">
+            </p>
+            <button id="togglePiP">Picture-in-Picture</button>
+            <button id="toggleFullscreen">Fullscreen</button>
+            <button id="closeAdvancedModalBtn">Close</button>
+        </div>
+    </div>
+
+    <!-- Theme Picker Modal -->
+    <div class="modal" id="themeModal">
+        <div class="modal-content">
+            <h3>Choose Theme</h3>
+            <p>
+                <button data-theme="dark">Dark Mode</button>
+                <button data-theme="light">Light Mode</button>
+                <button data-theme="oled">OLED Pure Black</button>
+            </p>
+            <p>
+                Color Accent:
+                <button data-color="blue" style="background-color: #007bff;"></button>
+                <button data-color="purple" style="background-color: #8a2be2;"></button>
+                <button data-color="teal" style="background-color: #008080;"></button>
+                <button data-color="neon" style="background-color: #0ff;"></button>
+            </p>
+            <button id="closeThemeModalBtn">Close</button>
+        </div>
+    </div>
+
+    <script id="magnet">
+        const urlParams = new URLSearchParams(window.location.search);
+        const magnetURI = urlParams.get('magnet');
+        if (!magnetURI) {
+            alert('No magnet link found. Returning to home.');
+            window.location.href = 'index.html';
+        }
+        console.log('Joining swarm with magnet:', magnetURI);
+
+        // Parse magnet link to extract infoHash
+        // Simplified parsing for demonstration. A real magnet link parser would be more robust.
+        function parseMagnetURI(magnet) {
+            const match = magnet.match(/xt=urn:btih:([a-zA-Z0-9]+)/);
+            return match ? match[1] : null;
+        }
+        const roomInfoHash = parseMagnetURI(magnetURI);
+        if (!roomInfoHash) {
+            alert('Invalid magnet link. Returning to home.');
+            window.location.href = 'index.html';
+        }
+        console.log('Room Info Hash:', roomInfoHash);
+
+        // Base64 encoded join/leave sounds (simplified, actual audio data would be larger)
+        const joinSound = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='; // Very tiny silent wav
+        const leaveSound = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='; // Very tiny silent wav
+
+        function playSound(base64Audio) {
+            const audio = new Audio(base64Audio);
+            audio.play().catch(e => console.warn("Failed to play sound:", e));
+        }
+
+        // Global state for peers
+        const peers = {}; // Stores { peerId: { rtcPeerConnection, dataChannel, stream, videoTileElement } }
+        let localStream;
+        let localVideoTrack;
+        let localAudioTrack;
+        let screenShareStream;
+        let mediaRecorder;
+        let recordingBlobs = [];
+        let recordingTimerInterval;
+        let isScreenSharing = false;
+        let isPipMode = false;
+        let isFullscreenMode = false;
+
+        let activeTheme = 'dark';
+        let activeColor = 'neon';
+
+        // Stun servers (hardcoded, for basic WebRTC connectivity)
+        const iceServers = [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            // Add more public STUN servers for robustness
+            // No TURN servers can be used without a backend
+        ];
+
+        // UI elements
+        const videoGrid = document.getElementById('videoGrid');
+        const localVideo = document.getElementById('localVideo');
+        const toggleMicBtn = document.getElementById('toggleMicBtn');
+        const toggleCamBtn = document.getElementById('toggleCamBtn');
+        const shareScreenBtn = document.getElementById('shareScreenBtn');
+        const chatBtn = document.getElementById('chatBtn');
+        const chatSidebar = document.getElementById('chatSidebar');
+        const closeChatBtn = document.getElementById('closeChatBtn');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendChatBtn = document.getElementById('sendChatBtn');
+        const fileTransferBtn = document.getElementById('fileTransferBtn');
+        const recordBtn = document.getElementById('recordBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const themeBtn = document.getElementById('themeBtn');
+        const peerCountDisplay = document.getElementById('peerCount');
+        const iceQualityIndicator = document.getElementById('iceQuality');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const localMicStatus = document.getElementById('localMicStatus');
+        const localVideoTile = document.getElementById('localVideoTile');
+
+        // Modals
+        const deviceModal = document.getElementById('deviceModal');
+        const cameraSelector = document.getElementById('cameraSelector');
+        const micSelector = document.getElementById('micSelector');
+        const speakerSelector = document.getElementById('speakerSelector');
+        const noiseSuppressionCheckbox = document.getElementById('noiseSuppression');
+        const echoCancellationCheckbox = document.getElementById('echoCancellation');
+        const closeDeviceModalBtn = document.getElementById('closeDeviceModalBtn');
+
+        const advancedModal = document.getElementById('advancedModal');
+        const blurBackgroundCheckbox = document.getElementById('blurBackground');
+        const brightnessSlider = document.getElementById('brightnessSlider');
+        const contrastSlider = document.getElementById('contrastSlider');
+        const togglePiPBtn = document.getElementById('togglePiP');
+        const toggleFullscreenBtn = document.getElementById('toggleFullscreen');
+        const closeAdvancedModalBtn = document.getElementById('closeAdvancedModalBtn');
+
+        const themeModal = document.getElementById('themeModal');
+        const closeThemeModalBtn = document.getElementById('closeThemeModalBtn');
+
+        // Toast notifications
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 5000);
+        }
+
+        // Apply theme styles
+        function applyTheme(theme, color) {
+            const body = document.body;
+            body.className = ''; // Reset classes
+            body.classList.add(`${theme}-mode`);
+            body.classList.add(`${color}-theme`); // Apply color accent
+
+            activeTheme = theme;
+            activeColor = color;
+
+            // Update CSS variables for dynamic styling
+            const root = document.documentElement;
+            if (theme === 'dark') {
+                root.style.setProperty('--current-bg', 'var(--bg-dark)');
+                root.style.setProperty('--current-text', 'var(--text-dark)');
+                root.style.setProperty('--current-card-bg', 'var(--card-bg-dark)');
+                root.style.setProperty('--current-input-bg', 'rgba(255, 255, 255, 0.15)');
+                root.style.setProperty('--current-input-border', 'rgba(255, 255, 255, 0.3)');
+            } else if (theme === 'light') {
+                root.style.setProperty('--current-bg', 'var(--bg-light)');
+                root.style.setProperty('--current-text', 'var(--text-light)');
+                root.style.setProperty('--current-card-bg', 'var(--card-bg-light)');
+                root.style.setProperty('--current-input-bg', 'rgba(0, 0, 0, 0.05)');
+                root.style.setProperty('--current-input-border', 'rgba(0, 0, 0, 0.2)');
+            } else if (theme === 'oled') {
+                root.style.setProperty('--current-bg', '#000000');
+                root.style.setProperty('--current-text', '#f0f0f0');
+                root.style.setProperty('--current-card-bg', 'rgba(0, 0, 0, 0.9)');
+                root.style.setProperty('--current-input-bg', 'rgba(255, 255, 255, 0.05)');
+                root.style.setProperty('--current-input-border', 'rgba(255, 255, 255, 0.1)');
+            }
+
+            // Update button gradient based on color accent
+            if (color === 'blue') {
+                root.style.setProperty('--current-button-bg', 'linear-gradient(45deg, #007bff, #00c0ff)');
+                root.style.setProperty('--primary-color', '#007bff');
+                root.style.setProperty('--secondary-color', '#00c0ff');
+                root.style.setProperty('--tertiary-color', '#28a745');
+            } else if (color === 'purple') {
+                root.style.setProperty('--current-button-bg', 'linear-gradient(45deg, #8a2be2, #da70d6)');
+                root.style.setProperty('--primary-color', '#8a2be2');
+                root.style.setProperty('--secondary-color', '#da70d6');
+                root.style.setProperty('--tertiary-color', '#ff1493');
+            } else if (color === 'teal') {
+                root.style.setProperty('--current-button-bg', 'linear-gradient(45deg, #008080, #40e0d0)');
+                root.style.setProperty('--primary-color', '#008080');
+                root.style.setProperty('--secondary-color', '#40e0d0');
+                root.style.setProperty('--tertiary-color', '#32cd32');
+            } else if (color === 'neon') {
+                root.style.setProperty('--current-button-bg', 'linear-gradient(45deg, #0ff, #f0f)');
+                root.style.setProperty('--primary-color', '#0ff');
+                root.style.setProperty('--secondary-color', '#f0f');
+                root.style.setProperty('--tertiary-color', '#0f0');
+            }
+        }
+        // Initial theme application
+        applyTheme(activeTheme, activeColor);
+    </script>
+
+    <script id="signaling">
+        /*
+        ====================================================
+        P2P SIGNALING + CONNECTION (CONCEPTUAL)
+        ====================================================
+        - Magnet-based “swarm room”
+        - Exchanging SDP offer/answer/ICE as JSON chunks
+        - Reconnect logic when peer drops
+        - Retry ICE candidates
+        - ICE connection quality indicator (excellent/good/weak/disconnected)
+
+        *** THIS SECTION IS HIGHLY CONCEPTUAL ***
+        Implementing a full WebTorrent client from scratch and using it for
+        real-time WebRTC signaling in this context is extremely complex and
+        would require a massive amount of code that cannot be embedded here.
+        The following is a simplified abstraction.
+        */
+
+        const myPeerId = `user-${Math.random().toString(36).substr(2, 9)}`; // Unique ID for this user
+
+        // Mock WebTorrent client functions (placeholders)
+        const mockWebTorrentClient = {
+            add: (magnetUri, callback) => {
+                console.log(`[WebTorrent Mock] Adding magnet: ${magnetUri}`);
+                // Simulate torrent ready after a delay
+                setTimeout(() => {
+                    const mockTorrent = {
+                        on: (event, handler) => {
+                            if (event === 'ready') {
+                                // For signaling, we'd essentially have a tiny 'metadata' torrent.
+                                // When it's 'ready', we can theoretically start adding 'pieces'
+                                // that represent our signaling data (offers, answers, ICE).
+                                // This is a HUGE simplification. A real implementation would manage
+                                // torrent pieces to carry JSON data, which is not what WebTorrent is designed for.
+                                console.log(`[WebTorrent Mock] Torrent for room ${roomInfoHash} ready.`);
+                                loadingOverlay.style.display = 'none'; // Hide loading
+                                playSound(joinSound);
+                                handler(); // Call ready handler
+                            }
+                            // Other events like 'wire', 'download', 'upload' would be relevant
+                        },
+                        // In a real scenario, we'd have a way to 'publish' data
+                        // This might involve creating new pieces, or using data channels
+                        // that WebTorrent might expose for metadata. This is hand-wavy.
+                        sendSignaling: (toPeerId, message) => {
+                            console.log(`[WebTorrent Mock] Sending signaling to ${toPeerId}:`, message);
+                            // Simulate direct message delivery for signaling
+                            // In a real WebTorrent setup, this would be a complex dance of:
+                            // 1. Creating a new "piece" or updating a file with the JSON
+                            // 2. Ensuring the piece propagates quickly
+                            // 3. Peers listening for new pieces for their specific messages
+                            // For this mock, we'll just log and assume it happens.
+                        },
+                        peers: [], // Mock peers
+                        // A mock function to add remote peers to the swarm
+                        addRemotePeer: (peerId) => {
+                            if (!mockTorrent.peers.includes(peerId)) {
+                                mockTorrent.peers.push(peerId);
+                                showToast(`User ${peerId} joined!`);
+                                updatePeerCount();
+                            }
+                        },
+                        removeRemotePeer: (peerId) => {
+                            mockTorrent.peers = mockTorrent.peers.filter(id => id !== peerId);
+                            showToast(`User ${peerId} left.`);
+                            updatePeerCount();
+                        }
+                    };
+                    callback(mockTorrent);
+                }, 1000); // Simulate network delay
+            },
+            destroy: () => {
+                console.log('[WebTorrent Mock] Client destroyed.');
+            }
+        };
+
+        let torrentClient; // Will hold our mock torrent client
+        let roomTorrent;   // Will hold the mock torrent for the room
+
+        // Function to update peer count display
+        function updatePeerCount() {
+            peerCountDisplay.textContent = `Peers: ${Object.keys(peers).length + 1}`; // +1 for self
+        }
+
+        // Initialize WebTorrent (mocked)
+        mockWebTorrentClient.add(magnetURI, (torrent) => {
+            roomTorrent = torrent;
+            roomTorrent.on('ready', () => {
+                console.log('Torrent client ready. Waiting for peers...');
+                // The actual WebRTC setup would begin here.
+                // We'd need to create our RTCPeerConnection and start the signaling process.
+                startWebRTC();
+            });
+            // Simulate other peers joining for testing UI
+            setTimeout(() => {
+                roomTorrent.addRemotePeer('peer-alpha');
+                roomTorrent.addRemotePeer('peer-beta');
+                // Simulate signaling from new peers
+                simulateIncomingSignaling('peer-alpha', { type: 'offer', sdp: 'v=0...' });
+                simulateIncomingSignaling('peer-beta', { type: 'offer', sdp: 'v=0...' });
+            }, 3000);
+        });
+
+        // Simplified signaling message processing (mock)
+        function sendSignalingMessage(toPeerId, message) {
+            // In a real WebTorrent setup, this would publish the message to the torrent,
+            // tagged for the specific peer, and the peer would download/receive the piece.
+            // This is just a log for conceptual understanding.
+            console.log(`[Signaling] Sending to ${toPeerId}:`, message);
+            // Simulate direct message for internal testing / UI updates
+            if (message.type === 'answer') {
+                // If it's an answer, it's for a specific offer we received.
+                // In a real system, we'd find the RTCPeerConnection for `toPeerId` and setRemoteDescription.
+            } else if (message.type === 'candidate') {
+                 // Add ICE candidate to the RTCPeerConnection for `toPeerId`.
+            }
+        }
+
+        // Simulate incoming signaling messages from other peers (for demonstration)
+        function simulateIncomingSignaling(fromPeerId, message) {
+            console.log(`[Signaling] Received from ${fromPeerId}:`, message);
+            // This is where you would handle offer, answer, and ICE candidates
+            // and update the corresponding RTCPeerConnection.
+            if (!peers[fromPeerId]) {
+                peers[fromPeerId] = { rtcPeerConnection: createPeerConnection(fromPeerId, true) }; // `true` for `isInitiator` if we're receiving an offer
+            }
+
+            const pc = peers[fromPeerId].rtcPeerConnection;
+
+            if (message.type === 'offer') {
+                pc.setRemoteDescription(new RTCSessionDescription(message))
+                    .then(() => pc.createAnswer())
+                    .then(answer => pc.setLocalDescription(answer))
+                    .then(() => sendSignalingMessage(fromPeerId, pc.localDescription))
+                    .catch(e => console.error("Error handling offer:", e));
+            } else if (message.type === 'answer') {
+                pc.setRemoteDescription(new RTCSessionDescription(message))
+                    .catch(e => console.error("Error handling answer:", e));
+            } else if (message.type === 'candidate') {
+                const candidate = new RTCIceCandidate(message.candidate);
+                pc.addIceCandidate(candidate).catch(e => console.error("Error adding ICE candidate:", e));
+            }
+        }
+
+        // Reconnect logic (highly simplified)
+        function setupReconnectLogic(peerId, pc) {
+            pc.oniceconnectionstatechange = () => {
+                console.log(`ICE connection state for ${peerId}:`, pc.iceConnectionState);
+                iceQualityIndicator.textContent = `Conn: ${pc.iceConnectionState}`;
+                if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+                    // Implement retry logic here
+                    showToast(`Peer ${peerId} connection lost. Attempting reconnect...`);
+                    // This would involve re-exchanging offers/answers or trickle ICE.
+                } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+                    showToast(`Peer ${peerId} reconnected!`);
+                }
+            };
+        }
+
+    </script>
+
+    <script id="rtc">
+        /*
+        ====================================================
+        VIDEO + AUDIO
+        ====================================================
+        - Multi-peer P2P mesh WebRTC
+        - Full HD support (1080p)
+        - Smart resolution fallback (360p → 720p → 1080p)
+        - Noise suppression + echo cancellation toggles
+        - Auto FPS adapt (15–30–60 fps)
+
+        ====================================================
+        SCREEN SHARING
+        ====================================================
+        - Full screen
+        - Window
+        - Browser tab with audio
+        - Visual “Screen Sharing Active” border glow effect
+
+        ====================================================
+        DEVICE SELECTION MENU
+        ====================================================
+        - Camera selector
+        - Microphone selector
+        - Speaker output selector (if supported)
+        - Update devices while in call
+
+        ====================================================
+        ADVANCED CONTROLS
+        ====================================================
+        - Toggle camera/mic
+        - Blur background (WebGL shader placeholder)
+        - Background replacement (AI segmentation optional placeholder)
+        - Local stream brightness/contrast slider
+        - Picture-in-Picture mode
+        - Fullscreen mode
+
+        ====================================================
+        AUDIO & SPEAKING LOGIC
+        ====================================================
+        - Active speaker detection
+        - Sound threshold visualization
+        - Volume meter under each video tile
+        - Auto mute noisy users (optional toggle)
+
+        ====================================================
+        RECORDING
+        ====================================================
+        - Local recording with MediaRecorder:
+            • Record self
+            • Record call
+            • Record screen
+        - Save video as .webm
+        - Recording timer
+        */
+
+        // Utility to get user media with constraints
+        async function getMedia(constraints) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                console.log('Got media stream:', stream);
+                return stream;
+            } catch (e) {
+                console.error('getUserMedia error:', e);
+                showToast(`Media access error: ${e.name}`, 'error');
+                return null;
+            }
+        }
+
+        // Initial media setup
+        async function initializeLocalStream() {
+            const audioConstraints = {
+                echoCancellation: echoCancellationCheckbox.checked,
+                noiseSuppression: noiseSuppressionCheckbox.checked,
+                deviceId: micSelector.value ? { exact: micSelector.value } : undefined,
+            };
+            const videoConstraints = {
+                deviceId: cameraSelector.value ? { exact: cameraSelector.value } : undefined,
+                width: { ideal: 1280, max: 1920 }, // Prefer HD, allow FHD
+                height: { ideal: 720, max: 1080 },
+                frameRate: { ideal: 30, max: 60 } // Adapt FPS
+            };
+
+            localStream = await getMedia({ audio: audioConstraints, video: videoConstraints });
+            if (localStream) {
+                localVideo.srcObject = localStream;
+                localVideoTrack = localStream.getVideoTracks()[0];
+                localAudioTrack = localStream.getAudioTracks()[0];
+                localMicStatus.classList.remove('muted');
+                toggleMicBtn.textContent = '🎤 Mute';
+                toggleCamBtn.textContent = '📹 Off';
+            } else {
+                // Fallback for no media access (e.g., provide a blank canvas or message)
+                showToast('Failed to get local media. Check permissions.', 'error');
+            }
+            populateDeviceSelectors();
+        }
+
+        // Populate device selectors
+        async function populateDeviceSelectors() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            cameraSelector.innerHTML = '';
+            micSelector.innerHTML = '';
+            speakerSelector.innerHTML = '';
+
+            devices.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                option.textContent = device.label || `${device.kind} ${device.deviceId.substring(0, 5)}...`;
+                if (device.kind === 'videoinput') {
+                    cameraSelector.appendChild(option);
+                } else if (device.kind === 'audioinput') {
+                    micSelector.appendChild(option);
+                } else if (device.kind === 'audiooutput') {
+                    speakerSelector.appendChild(option);
+                }
+            });
+
+            // Set current selections if available
+            if (localVideoTrack && cameraSelector.querySelector(`[value="${localVideoTrack.getSettings().deviceId}"]`)) {
+                cameraSelector.value = localVideoTrack.getSettings().deviceId;
+            }
+            if (localAudioTrack && micSelector.querySelector(`[value="${localAudioTrack.getSettings().deviceId}"]`)) {
+                micSelector.value = localAudioTrack.getSettings().deviceId;
+            }
+            // Speaker selection needs a different API (setSinkId) and is not universally supported
+            if (localVideo.sinkId && speakerSelector.querySelector(`[value="${localVideo.sinkId}"]`)) {
+                speakerSelector.value = localVideo.sinkId;
+            }
+        }
+
+        // Change camera/mic/speaker while in call
+        async function changeMediaDevice(kind, deviceId) {
+            let newStream;
+            if (kind === 'videoinput') {
+                newStream = await getMedia({ video: { deviceId: { exact: deviceId } }, audio: false });
+                if (newStream) {
+                    const newVideoTrack = newStream.getVideoTracks()[0];
+                    if (localVideoTrack) {
+                        localVideoTrack.stop();
+                        localStream.removeTrack(localVideoTrack);
+                    }
+                    localStream.addTrack(newVideoTrack);
+                    localVideo.srcObject = localStream; // Reassign srcObject for local display
+                    localVideoTrack = newVideoTrack;
+
+                    // Replace tracks for all connected peers
+                    Object.values(peers).forEach(p => {
+                        p.rtcPeerConnection.getSenders().forEach(sender => {
+                            if (sender.track && sender.track.kind === 'video') {
+                                sender.replaceTrack(newVideoTrack);
+                            }
+                        });
+                    });
+                    showToast('Camera changed!');
+                }
+            } else if (kind === 'audioinput') {
+                newStream = await getMedia({ audio: { deviceId: { exact: deviceId } }, video: false });
+                if (newStream) {
+                    const newAudioTrack = newStream.getAudioTracks()[0];
+                    if (localAudioTrack) {
+                        localAudioTrack.stop();
+                        localStream.removeTrack(localAudioTrack);
+                    }
+                    localStream.addTrack(newAudioTrack);
+                    localAudioTrack = newAudioTrack;
+
+                    Object.values(peers).forEach(p => {
+                        p.rtcPeerConnection.getSenders().forEach(sender => {
+                            if (sender.track && sender.track.kind === 'audio') {
+                                sender.replaceTrack(newAudioTrack);
+                            }
+                        });
+                    });
+                    showToast('Microphone changed!');
+                }
+            } else if (kind === 'audiooutput') {
+                if (typeof localVideo.setSinkId === 'function') {
+                    localVideo.setSinkId(deviceId)
+                        .then(() => showToast('Speaker output changed!'))
+                        .catch(e => console.error('Error setting sink ID:', e));
+                } else {
+                    showToast('Speaker output selection not supported by your browser.', 'warning');
+                }
+            }
+        }
+
+        // Toggle mic
+        toggleMicBtn.addEventListener('click', () => {
+            if (localAudioTrack) {
+                localAudioTrack.enabled = !localAudioTrack.enabled;
+                toggleMicBtn.textContent = localAudioTrack.enabled ? '🎤 Mute' : '🔇 Unmute';
+                localMicStatus.classList.toggle('muted', !localAudioTrack.enabled);
+                // Signaling would inform peers about mic status
+            }
+        });
+
+        // Toggle camera
+        toggleCamBtn.addEventListener('click', () => {
+            if (localVideoTrack) {
+                localVideoTrack.enabled = !localVideoTrack.enabled;
+                toggleCamBtn.textContent = localVideoTrack.enabled ? '📹 Off' : '📷 On';
+                // Signaling would inform peers about camera status
+            }
+        });
+
+        // Screen Sharing
+        shareScreenBtn.addEventListener('click', async () => {
+            if (isScreenSharing) {
+                // Stop screen sharing
+                screenShareStream.getTracks().forEach(track => track.stop());
+                screenShareStream = null;
+                isScreenSharing = false;
+                shareScreenBtn.textContent = '🖥 Share Screen';
+                localVideoTile.classList.remove('screen-share');
+
+                // Replace screen share track with camera track for peers
+                Object.values(peers).forEach(p => {
+                    p.rtcPeerConnection.getSenders().forEach(sender => {
+                        if (sender.track && sender.track.kind === 'video') {
+                            sender.replaceTrack(localVideoTrack); // Go back to camera
+                        }
+                    });
+                });
+                showToast('Screen sharing stopped.');
+            } else {
+                try {
+                    // mediaDevices.getDisplayMedia for screen sharing
+                    const displayStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: true,
+                        audio: true // Request audio for tab sharing
+                    });
+                    screenShareStream = displayStream;
+                    isScreenSharing = true;
+                    shareScreenBtn.textContent = 'Stop Sharing';
+                    localVideoTile.classList.add('screen-share');
+
+                    // Replace local video track with screen share track for peers
+                    Object.values(peers).forEach(p => {
+                        p.rtcPeerConnection.getSenders().forEach(sender => {
+                            if (sender.track && sender.track.kind === 'video') {
+                                sender.replaceTrack(screenShareStream.getVideoTracks()[0]);
+                            }
+                            if (screenShareStream.getAudioTracks().length > 0 && sender.track && sender.track.kind === 'audio') {
+                                sender.replaceTrack(screenShareStream.getAudioTracks()[0]);
+                            }
+                        });
+                    });
+
+                    // Update local video element for self-preview (optional, or show screen share in a separate tile)
+                    localVideo.srcObject = screenShareStream;
+
+                    // Listen for screen share end event
+                    displayStream.getVideoTracks()[0].onended = () => {
+                        shareScreenBtn.click(); // Programmatically click to stop
+                    };
+                    showToast('Screen sharing started!', 'success');
+                } catch (e) {
+                    console.error('Error sharing screen:', e);
+                    showToast(`Failed to share screen: ${e.name}`, 'error');
+                }
+            }
+        });
+
+        // WebGL background blur (placeholder)
+        blurBackgroundCheckbox.addEventListener('change', () => {
+            if (blurBackgroundCheckbox.checked) {
+                showToast('Background blur enabled (visual effect only, actual implementation requires WebGL shader).', 'info');
+                localVideoTile.style.filter = 'blur(5px)'; // Simple CSS blur for visual demo
+            } else {
+                localVideoTile.style.filter = 'none';
+            }
+        });
+
+        // Brightness/Contrast Sliders
+        brightnessSlider.addEventListener('input', (e) => {
+            localVideo.style.filter = `brightness(${e.target.value}) contrast(${contrastSlider.value})`;
+        });
+        contrastSlider.addEventListener('input', (e) => {
+            localVideo.style.filter = `brightness(${brightnessSlider.value}) contrast(${e.target.value})`;
+        });
+
+        // Picture-in-Picture mode
+        togglePiPBtn.addEventListener('click', () => {
+            isPipMode = !isPipMode;
+            document.body.classList.toggle('pip-mode', isPipMode);
+            togglePiPBtn.textContent = isPipMode ? 'Exit PiP' : 'Picture-in-Picture';
+            showToast(`Picture-in-Picture ${isPipMode ? 'enabled' : 'disabled'}`);
+        });
+
+        // Fullscreen mode
+        toggleFullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                isFullscreenMode = true;
+                toggleFullscreenBtn.textContent = 'Exit Fullscreen';
+                document.body.classList.add('fullscreen-mode');
+            } else {
+                document.exitFullscreen();
+                isFullscreenMode = false;
+                toggleFullscreenBtn.textContent = 'Fullscreen';
+                document.body.classList.remove('fullscreen-mode');
+            }
+            showToast(`Fullscreen ${isFullscreenMode ? 'enabled' : 'disabled'}`);
+        });
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                isFullscreenMode = false;
+                toggleFullscreenBtn.textContent = 'Fullscreen';
+                document.body.classList.remove('fullscreen-mode');
+            }
+        });
+
+        // Recording
+        recordBtn.addEventListener('click', async () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                recordBtn.textContent = '⏺ Record';
+                clearInterval(recordingTimerInterval);
+                recordBtn.classList.remove('recording-active');
+                showToast('Recording stopped. Saving file...');
+            } else {
+                try {
+                    // Combine local stream (audio/video) and screen share stream (if active)
+                    let streamsToRecord = [localStream];
+                    if (isScreenSharing && screenShareStream) {
+                        streamsToRecord.push(screenShareStream);
+                    }
+
+                    // For "Record call", you'd need to create a new MediaStream by combining
+                    // all remote peer streams as well, which is complex.
+                    // For this demo, we'll record local + screen.
+                    const combinedStream = new MediaStream();
+                    streamsToRecord.forEach(stream => {
+                        stream.getTracks().forEach(track => combinedStream.addTrack(track.clone()));
+                    });
+
+                    mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
+                    recordingBlobs = [];
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            recordingBlobs.push(event.data);
+                        }
+                    };
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(recordingBlobs, { type: 'video/webm' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = `p2p-call-recording-${new Date().toISOString()}.webm`;
+                        document.body.appendChild(a);
+                        a.click();
+                        setTimeout(() => {
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                        }, 100);
+                        showToast('Recording saved as .webm!', 'success');
+                    };
+
+                    mediaRecorder.start();
+                    recordBtn.textContent = '⏹ Stop Recording (00:00)';
+                    recordBtn.classList.add('recording-active'); // Add a glow effect via CSS
+                    let seconds = 0;
+                    recordingTimerInterval = setInterval(() => {
+                        seconds++;
+                        const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
+                        const remainingSeconds = (seconds % 60).toString().padStart(2, '0');
+                        recordBtn.textContent = `⏹ Stop Recording (${minutes}:${remainingSeconds})`;
+                    }, 1000);
+                    showToast('Recording started!', 'success');
+
+                } catch (e) {
+                    console.error('Error starting recording:', e);
+                    showToast(`Failed to start recording: ${e.name}`, 'error');
+                }
+            }
+        });
+
+        // WebRTC Peer Connection setup
+        function createPeerConnection(peerId, isInitiator = false) {
+            const pc = new RTCPeerConnection({ iceServers });
+
+            // Add local tracks to the connection
+            if (localStream) {
+                localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+            }
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    sendSignalingMessage(peerId, { type: 'candidate', candidate: event.candidate });
+                }
+            };
+
+            pc.ontrack = (event) => {
+                console.log(`Track received from ${peerId}:`, event.streams[0]);
+                // Create a video tile for the remote stream
+                let remoteVideoTile = document.getElementById(`video-tile-${peerId}`);
+                if (!remoteVideoTile) {
+                    remoteVideoTile = document.createElement('div');
+                    remoteVideoTile.className = 'video-tile';
+                    remoteVideoTile.id = `video-tile-${peerId}`;
+                    remoteVideoTile.innerHTML = `
+                        <video autoplay playsinline></video>
+                        <div class="user-info">
+                            <span class="mic-status"></span>
+                            <span class="user-name">${peerId}</span>
+                            <span class="volume-meter"></span>
+                        </div>
+                    `;
+                    videoGrid.appendChild(remoteVideoTile);
+                    updatePeerCount();
+                }
+                remoteVideoTile.querySelector('video').srcObject = event.streams[0];
+
+                // Active speaker and volume meter logic (conceptual)
+                // Implement an AudioContext to analyze stream volume
+                // Add/remove 'speaking' class based on volume
+            };
+
+            pc.ondatachannel = (event) => {
+                console.log(`DataChannel received from ${peerId}:`, event.channel);
+                peers[peerId].dataChannel = event.channel;
+                setupDataChannelListeners(peerId, event.channel);
+                showToast(`Data channel opened with ${peerId}.`);
+            };
+
+            pc.onconnectionstatechange = () => {
+                console.log(`WebRTC connection state for ${peerId}: ${pc.connectionState}`);
+                if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+                    // Cleanup UI
+                    const tile = document.getElementById(`video-tile-${peerId}`);
+                    if (tile) tile.remove();
+                    delete peers[peerId];
+                    updatePeerCount();
+                    playSound(leaveSound);
+                    showToast(`User ${peerId} disconnected.`, 'warning');
+                }
+            };
+
+            if (isInitiator) {
+                // Create data channel for the initiator
+                const dataChannel = pc.createDataChannel("chat");
+                peers[peerId].dataChannel = dataChannel;
+                setupDataChannelListeners(peerId, dataChannel);
+                console.log('Created DataChannel:', dataChannel);
+
+                // Create offer
+                pc.createOffer()
+                    .then(offer => pc.setLocalDescription(offer))
+                    .then(() => sendSignalingMessage(peerId, pc.localDescription))
+                    .catch(e => console.error("Error creating offer:", e));
+            }
+
+            setupReconnectLogic(peerId, pc); // Setup ICE connection monitoring
+
+            return pc;
+        }
+
+        // Main WebRTC startup function
+        async function startWebRTC() {
+            await initializeLocalStream();
+            loadingOverlay.style.display = 'none';
+
+            // For each existing peer in the swarm (mocked by WebTorrent client)
+            // (In a real system, WebTorrent would notify us of new peers/existing peers in the swarm)
+            // We'll simulate by creating offers to other peers reported by the mock torrent client
+            if (roomTorrent && roomTorrent.peers) {
+                roomTorrent.peers.forEach(peerId => {
+                    if (peerId !== myPeerId && !peers[peerId]) {
+                        console.log(`Initiating call with peer: ${peerId}`);
+                        peers[peerId] = { rtcPeerConnection: createPeerConnection(peerId, true) };
+                    }
+                });
+            }
+        }
+
+        // Listener for device selection changes
+        cameraSelector.addEventListener('change', (e) => changeMediaDevice('videoinput', e.target.value));
+        micSelector.addEventListener('change', (e) => changeMediaDevice('audioinput', e.target.value));
+        speakerSelector.addEventListener('change', (e) => changeMediaDevice('audiooutput', e.target.value));
+
+        // Noise suppression and echo cancellation
+        function updateAudioConstraints() {
+            if (localAudioTrack) {
+                // Re-get media to apply new constraints. This can interrupt the stream.
+                // A better way is to use track.applyConstraints if available and robust enough.
+                initializeLocalStream(); // Re-initializes with new settings
+                showToast('Audio settings updated.');
+            }
+        }
+        noiseSuppressionCheckbox.addEventListener('change', updateAudioConstraints);
+        echoCancellationCheckbox.addEventListener('change', updateAudioConstraints);
+
+    </script>
+
+    <script id="ui">
+        /*
+        ====================================================
+        LAYOUT & UI
+        ====================================================
+        - Dynamic grid layout (auto scale)
+        - Advanced CSS (glassmorphism, neumorphism, etc.)
+        - User cards with: Name, Mic status, Connection rank bar
+
+        ====================================================
+        CHAT SYSTEM
+        ====================================================
+        - WebRTC DataChannel messaging
+        - Chat bubbles with timestamps
+        - Chat reactions (❤️ 😂 👍 👎)
+        - Typing indicator
+        - Message delivery status (sent/received/failed)
+        - Chat theme switch (light/dark)
+
+        ====================================================
+        FILE TRANSFER
+        ====================================================
+        - P2P transfer using WebRTC DataChannel
+        - Chunked transfer with progress bars
+        - Cancel transfer option
+        - Auto-open or save prompt
+
+        ====================================================
+        THEMES
+        ====================================================
+        - Light mode
+        - Dark mode
+        - OLED pure-black mode
+        - Color theme picker (blue, purple, teal, neon)
+
+        ====================================================
+        ADDITIONAL SMART FEATURES
+        ====================================================
+        - Auto reconnect if tracker temporarily fails
+        - Auto rejoin room on refresh with same magnet link
+        - Peer count display
+        - Join/leave sound effect (base64 embedded audio)
+        - Blur sensitive UI while loading
+        - Auto-focus animations
+        - Toast notifications
+        */
+
+        // Open/Close Chat Sidebar
+        chatBtn.addEventListener('click', () => chatSidebar.classList.add('open'));
+        closeChatBtn.addEventListener('click', () => chatSidebar.classList.remove('open'));
+
+        // Send Chat Message
+        sendChatBtn.addEventListener('click', () => {
+            const message = chatInput.value.trim();
+            if (message) {
+                const chatMsg = {
+                    type: 'chat',
+                    sender: myPeerId,
+                    message: message,
+                    timestamp: new Date().toLocaleTimeString(),
+                    status: 'sent'
+                };
+                addChatMessage(chatMsg, true); // Add to local chat view
+                Object.values(peers).forEach(p => {
+                    if (p.dataChannel && p.dataChannel.readyState === 'open') {
+                        p.dataChannel.send(JSON.stringify(chatMsg));
+                    }
+                });
+                chatInput.value = '';
+            }
+        });
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChatBtn.click();
+        });
+
+        // Add Chat Message to UI
+        function addChatMessage(msg, isLocal = false) {
+            const chatBubble = document.createElement('div');
+            chatBubble.className = `chat-bubble ${isLocal ? 'local' : 'remote'}`;
+            chatBubble.innerHTML = `
+                <div class="sender">${isLocal ? 'You' : msg.sender}</div>
+                <div class="message">${msg.message}</div>
+                <div class="meta">${msg.timestamp} - <span class="status">${msg.status}</span></div>
+            `;
+            chatMessages.appendChild(chatBubble);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
+            // Placeholder for chat reactions
+            // For reactions, you'd send another DataChannel message with reaction type
+            // and update the existing message bubble.
+        }
+
+        // File Transfer (Conceptual, DataChannel based)
+        fileTransferBtn.addEventListener('click', async () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                showToast(`Preparing to send file: ${file.name}`, 'info');
+
+                // Simulate sending file via DataChannel
+                // This would involve chunking the file and sending each chunk.
+                const chunkSize = 16 * 1024; // 16KB chunks
+                let offset = 0;
+                const fileMetadata = {
+                    type: 'file-start',
+                    name: file.name,
+                    size: file.size,
+                    mime: file.type
+                };
+
+                Object.values(peers).forEach(p => {
+                    if (p.dataChannel && p.dataChannel.readyState === 'open') {
+                        p.dataChannel.send(JSON.stringify(fileMetadata));
+
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            p.dataChannel.send(event.target.result);
+                            offset += event.target.result.byteLength;
+                            if (offset < file.size) {
+                                // Simulate progress bar
+                                const progress = Math.floor((offset / file.size) * 100);
+                                showToast(`Sending ${file.name}: ${progress}%`, 'progress'); // Update a specific toast
+                                readSlice(offset);
+                            } else {
+                                p.dataChannel.send(JSON.stringify({ type: 'file-end', name: file.name }));
+                                showToast(`File ${file.name} sent!`, 'success');
+                            }
+                        };
+                        reader.onerror = (e) => console.error('Error reading file:', e);
+
+                        function readSlice(o) {
+                            const slice = file.slice(offset, o + chunkSize);
+                            reader.readAsArrayBuffer(slice);
+                        }
+                        readSlice(0); // Start reading
+                    } else {
+                        showToast(`No open data channel with peer for file transfer.`, 'warning');
+                    }
+                });
+            };
+            input.click();
+        });
+
+        // Setup DataChannel Listeners for incoming messages/files
+        function setupDataChannelListeners(peerId, channel) {
+            channel.onmessage = async (event) => {
+                const data = event.data;
+                try {
+                    const msg = JSON.parse(data);
+                    if (msg.type === 'chat') {
+                        addChatMessage(msg, false); // Add remote chat message
+                        showToast(`New message from ${msg.sender}: ${msg.message}`);
+                    } else if (msg.type === 'file-start') {
+                        showToast(`Receiving file: ${msg.name}...`, 'info');
+                        // Set up file receiving logic (buffer, progress, save)
+                        peers[peerId].receivingFile = {
+                            name: msg.name,
+                            size: msg.size,
+                            mime: msg.mime,
+                            buffer: [],
+                            receivedSize: 0,
+                            progressBar: document.getElementById('fileProgressBar'),
+                            toast: document.getElementById('fileTransferToast')
+                        };
+                        peers[peerId].receivingFile.toast.style.display = 'block';
+                        peers[peerId].receivingFile.progressBar.value = 0;
+                    } else if (msg.type === 'file-end') {
+                        const fileInfo = peers[peerId].receivingFile;
+                        if (fileInfo) {
+                            const receivedBlob = new Blob(fileInfo.buffer, { type: fileInfo.mime });
+                            const url = URL.createObjectURL(receivedBlob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = fileInfo.name;
+                            document.body.appendChild(a);
+                            a.click();
+                            setTimeout(() => {
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                            }, 100);
+                            showToast(`File "${fileInfo.name}" received and saved!`, 'success');
+                            fileInfo.toast.style.display = 'none';
+                            delete peers[peerId].receivingFile;
+                        }
+                    }
+                } catch (e) {
+                    // Assume it's a file chunk if not JSON
+                    if (peers[peerId].receivingFile) {
+                        const fileInfo = peers[peerId].receivingFile;
+                        fileInfo.buffer.push(data);
+                        fileInfo.receivedSize += data.byteLength;
+                        const progress = Math.floor((fileInfo.receivedSize / fileInfo.size) * 100);
+                        fileInfo.progressBar.value = progress;
+                        if (progress % 10 === 0) { // Update toast less frequently
+                            showToast(`Receiving ${fileInfo.name}: ${progress}%`, 'progress');
+                        }
+                    } else {
+                        console.warn('Received unknown data on DataChannel:', data);
+                    }
+                }
+            };
+            channel.onopen = () => console.log(`DataChannel to ${peerId} opened!`);
+            channel.onclose = () => console.log(`DataChannel to ${peerId} closed.`);
+            channel.onerror = (error) => console.error(`DataChannel error with ${peerId}:`, error);
+        }
+
+        // Open/Close Modals
+        settingsBtn.addEventListener('click', () => deviceModal.style.display = 'flex');
+        closeDeviceModalBtn.addEventListener('click', () => {
+            deviceModal.style.display = 'none';
+            // Trigger an update of media if settings changed
+            initializeLocalStream(); // This will apply new mic/cam settings
+        });
+
+        // Advanced Settings Modal
+        document.querySelector('.control-bar').addEventListener('click', (e) => {
+            if (e.target.textContent.includes('Settings')) { // Click on settings button, show device modal
+                deviceModal.style.display = 'flex';
+            } else if (e.target.textContent.includes('Advanced')) { // Placeholder for a separate advanced settings button
+                advancedModal.style.display = 'flex';
+            }
+        });
+        closeAdvancedModalBtn.addEventListener('click', () => advancedModal.style.display = 'none');
+
+        // Theme Picker Modal
+        themeBtn.addEventListener('click', () => themeModal.style.display = 'flex');
+        closeThemeModalBtn.addEventListener('click', () => themeModal.style.display = 'none');
+
+        themeModal.addEventListener('click', (e) => {
+            if (e.target.dataset.theme) {
+                applyTheme(e.target.dataset.theme, activeColor);
+                showToast(`Switched to ${e.target.dataset.theme} mode!`);
+            } else if (e.target.dataset.color) {
+                applyTheme(activeTheme, e.target.dataset.color);
+                showToast(`Switched to ${e.target.dataset.color} accent!`);
+            }
+        });
+
+        // Auto rejoin on refresh (using local storage)
+        // Store magnet link in session storage on first load
+        if (magnetURI && !sessionStorage.getItem('currentMagnetURI')) {
+            sessionStorage.setItem('currentMagnetURI', magnetURI);
+        } else if (!magnetURI && sessionStorage.getItem('currentMagnetURI')) {
+            // If refreshed without magnet in URL, but one exists in session, use it
+            window.location.href = `call.html?magnet=${encodeURIComponent(sessionStorage.getItem('currentMagnetURI'))}`;
+        }
+
+        // Blur sensitive UI while loading (CSS only via loading-overlay)
+        // This is handled by the loading-overlay div at the beginning.
+
+        // Initial setup calls
+        document.addEventListener('DOMContentLoaded', () => {
+            // Any final UI initialization
+            // The loading overlay is shown by default and hidden by `startWebRTC`
+        });
+
+        // Call the main application initialization function
+        // This will start the WebTorrent mock and then WebRTC
+        // This is the main entry point for the call.html script
+        // The `startWebRTC` function is defined in the rtc script block.
+        // It relies on `roomTorrent` being set by the signaling block.
+        // For a full implementation, ensure scripts are loaded in correct order or use defer.
+    </script>
+</body>
+</html>
