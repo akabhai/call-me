@@ -485,3 +485,61 @@ video {
 #pipBtn:hover {
     background: #666;
 }
+
+
+/* ... (Keep all previous CSS) ... */
+
+/* =========================================
+   NEW: PAGINATION & PERFORMANCE
+   ========================================= */
+
+/* Video Grid updates for performance */
+.video-grid-container {
+    display: grid;
+    /* Max 9 videos per page (3x3) to prevent crash */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 10px;
+    padding: 20px;
+    align-content: start;
+}
+
+/* Pagination Controls */
+.pagination-bar {
+    position: fixed;
+    bottom: 90px; /* Above control bar */
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    padding: 8px 16px;
+    border-radius: 30px;
+    display: flex;
+    gap: 15px;
+    z-index: 100;
+    color: white;
+    align-items: center;
+}
+
+.page-btn {
+    background: #1a73e8;
+    border: none;
+    color: white;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: bold;
+}
+.page-btn:disabled {
+    background: #555;
+    cursor: not-allowed;
+}
+
+/* Network Stats (Optional, helpful for debugging 100 users) */
+.net-stat {
+    position: absolute;
+    top: 5px; right: 5px;
+    font-size: 10px;
+    background: rgba(0,0,0,0.6);
+    color: #0f0;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
