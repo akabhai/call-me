@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>In Call</title>
     <link rel="stylesheet" href="style.css">
-    <!-- PeerJS -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
@@ -45,7 +44,7 @@
         <p id="loadingStatus">Initializing...</p>
     </div>
 
-    <!-- 4. VIDEO GRID -->
+    <!-- VIDEO GRID -->
     <div class="video-grid-container" id="videoGrid">
         <div class="video-tile local-stream" id="localTile">
             <video id="localVideo" autoplay muted playsinline></video>
@@ -53,11 +52,12 @@
         </div>
     </div>
 
-    <!-- 5. CONTROLS -->
+    <!-- CONTROLS -->
     <div class="control-bar">
         <button id="toggleMicBtn">🎤</button>
         <button id="toggleCamBtn">📹</button>
         <button id="shareScreenBtn">🖥</button>
+        <button id="pipBtn" title="Background Mode">🖼️</button> <!-- NEW BUTTON -->
         <button id="chatBtn">💬</button>
         <button id="leaveBtn">❌</button>
     </div>
@@ -72,7 +72,7 @@
         </div>
     </div>
 
-    <script src="ui.js"></script>
+     <script src="ui.js"></script>
     <script src="rtc.js"></script>
 
     <script>
