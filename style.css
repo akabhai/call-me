@@ -1,23 +1,89 @@
-/* ... (Keep all previous CSS) ... */
+/* =========================================
+   GLOBAL RESET & FONTS
+   ========================================= */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html, body {
+    height: 100%;
+    width: 100%;
+}
 
 /* =========================================
-   NEW: LINK GENERATION UI
+   1. CENTERED LANDING PAGE LAYOUT
    ========================================= */
+body.centered-layout {
+    background-color: #f0f2f5; /* Light Gray Background like Google */
+    display: flex;             /* Flexbox Magic */
+    align-items: center;       /* Vertical Center */
+    justify-content: center;   /* Horizontal Center */
+}
 
+/* The Card */
+.landing-card {
+    background: #ffffff;
+    width: 100%;
+    max-width: 450px;       /* Perfect width */
+    padding: 40px;
+    border-radius: 12px;    /* Rounded Corners */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Soft Shadow */
+    text-align: center;
+}
+
+.header h1 {
+    font-size: 28px;
+    color: #1f1f1f;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.header p {
+    color: #5f6368;
+    font-size: 16px;
+    margin-bottom: 32px;
+}
+
+/* Buttons */
+.btn-primary {
+    width: 100%;
+    padding: 14px;
+    background-color: #1a73e8; /* Professional Blue */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.1s, background-color 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: #1557b0;
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+/* Link Generation Area */
 .link-generation-container {
-    display: none; /* Hidden by default */
-    text-align: left;
+    display: none; /* Hidden initially */
     background: #f8f9fa;
     padding: 15px;
     border-radius: 8px;
-    border: 1px solid #e8eaed;
+    border: 1px solid #dadce0;
+    text-align: left;
     margin-bottom: 20px;
 }
 
 .link-label {
     font-size: 12px;
-    font-weight: 600;
     color: #5f6368;
+    font-weight: 600;
     margin-bottom: 8px;
     display: block;
 }
@@ -25,40 +91,177 @@
 .link-box {
     display: flex;
     gap: 8px;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .link-box input {
     background: #fff;
-    color: #3c4043;
+    font-family: monospace;
     font-size: 13px;
-    font-family: monospace; /* Makes code easier to read */
+    color: #1a73e8;
 }
 
 .btn-copy {
-    background: #fff;
+    background: white;
     border: 1px solid #dadce0;
     border-radius: 4px;
     cursor: pointer;
-    padding: 0 12px;
-    font-size: 16px;
-    transition: 0.2s;
-}
-.btn-copy:hover {
-    background: #f1f3f4;
-    border-color: #d2d4d7;
+    width: 40px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-start {
     width: 100%;
-    padding: 12px;
-    background-color: #1a73e8;
+    padding: 10px;
+    background-color: #188038; /* Green for Go */
     color: white;
     border: none;
     border-radius: 4px;
     font-weight: 500;
     cursor: pointer;
 }
-.btn-start:hover {
-    background-color: #1557b0;
+
+/* Divider */
+.divider {
+    margin: 24px 0;
+    display: flex;
+    align-items: center;
+    color: #5f6368;
+    font-size: 14px;
 }
+.divider::before, .divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #dadce0;
+}
+.divider span {
+    padding: 0 12px;
+}
+
+/* Input Group */
+.input-group {
+    display: flex;
+    gap: 8px;
+}
+
+input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #dadce0;
+    border-radius: 6px;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+input:focus {
+    border-color: #1a73e8;
+    border-width: 2px;
+    padding: 11px; /* Adjust for border width */
+}
+
+.btn-join {
+    padding: 0 20px;
+    background: transparent;
+    color: #1a73e8;
+    border: 1px solid transparent;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.btn-join:hover {
+    background: #e8f0fe;
+}
+
+/* =========================================
+   2. CALL PAGE STYLES (Dark Mode)
+   ========================================= */
+body:not(.centered-layout) {
+    background-color: #202124;
+    color: white;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure video grid takes remaining space */
+.video-grid-container {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.video-tile {
+    background: #3c4043;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    position: relative;
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-info {
+    position: absolute;
+    bottom: 10px; left: 10px;
+    background: rgba(0,0,0,0.6);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+/* Control Bar */
+.control-bar {
+    background: #202124;
+    padding: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    border-top: 1px solid #3c4043;
+}
+
+.control-bar button {
+    background: #3c4043;
+    color: #e8eaed;
+    border: none;
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+}
+.control-bar button:hover { background: #45484b; }
+#leaveBtn { background: #ea4335; color: white; width: 60px; border-radius: 30px; }
+
+/* Chat Sidebar */
+.chat-sidebar {
+    position: fixed; top: 0; right: -320px; width: 320px; height: 100%;
+    background: #fff; color: #333;
+    transition: 0.3s; display: flex; flex-direction: column; z-index: 999;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.2);
+}
+.chat-sidebar.open { right: 0; }
+.chat-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; }
+.chat-messages { flex: 1; padding: 15px; overflow-y: auto; }
+.chat-input-area { padding: 15px; border-top: 1px solid #ddd; display: flex; gap: 5px; }
+
+/* Loading */
+.loading-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #202124; z-index: 1000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+}
+.loading-spinner {
+    width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid #1a73e8; border-radius: 50%; animation: spin 1s linear infinite;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
