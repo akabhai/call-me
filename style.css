@@ -1,231 +1,174 @@
 :root {
-    /* Modern Aesthetic Palette */
-    --bg-color: #0f0f11;
-    --card-bg: rgba(255, 255, 255, 0.03);
-    --text-main: #ffffff;
-    --text-muted: #888888;
-    --accent: #6c5ce7; /* Soft Purple */
-    --accent-hover: #a29bfe;
-    --glass-border: rgba(255, 255, 255, 0.08);
-    
-    /* Font */
-    --font-main: 'Inter', sans-serif;
+    /* Zoom-like Aesthetic Palette */
+    --bg-color: #f5f7fa;       /* Very light grey-blue background */
+    --card-bg: #ffffff;        /* Pure white card */
+    --primary: #0e71eb;        /* Zoom Blue */
+    --primary-hover: #0b5ed7;
+    --text-main: #222222;
+    --text-muted: #666666;
+    --border-color: #e1e3e6;
+    --shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%; /* Critical for centering */
+    width: 100%;
 }
 
 body {
-    margin: 0;
     background-color: var(--bg-color);
     color: var(--text-main);
     font-family: var(--font-main);
-    height: 100vh;
-    overflow: hidden;
-    -webkit-font-smoothing: antialiased;
+    display: flex;             /* Flexbox for centering */
+    align-items: center;       /* Vertical Center */
+    justify-content: center;   /* Horizontal Center */
 }
 
 /* =========================================
-   LANDING PAGE STYLES (Aesthetic)
+   LANDING PAGE (The Card)
    ========================================= */
 
-.landing-body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-}
-
-/* Ambient Background Glows */
-.ambient-glow {
-    position: absolute;
-    width: 600px;
-    height: 600px;
-    border-radius: 50%;
-    filter: blur(100px);
-    opacity: 0.4;
-    z-index: -1;
-}
-.ambient-glow.one {
-    background: radial-gradient(circle, #6c5ce7 0%, transparent 70%);
-    top: -200px;
-    left: -200px;
-    animation: float 10s ease-in-out infinite;
-}
-.ambient-glow.two {
-    background: radial-gradient(circle, #00cec9 0%, transparent 70%);
-    bottom: -200px;
-    right: -200px;
-    animation: float 15s ease-in-out infinite alternate;
-}
-
-@keyframes float {
-    0% { transform: translate(0, 0); }
-    100% { transform: translate(50px, 50px); }
-}
-
-/* Main Card */
 .landing-card {
     background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    padding: 3rem;
-    border-radius: 24px;
     width: 100%;
-    max-width: 420px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    max-width: 400px;     /* Restrict width */
+    padding: 40px;
+    border-radius: 12px;  /* Smooth corners */
+    box-shadow: var(--shadow);
     text-align: center;
-    transform: translateY(0);
-    transition: transform 0.3s ease;
+    border: 1px solid #e5e5e5;
 }
 
-.landing-card:hover {
-    transform: translateY(-5px);
-}
-
-.header .icon-box {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    display: inline-block;
-    background: rgba(255,255,255,0.05);
-    padding: 15px;
-    border-radius: 20px;
+.header {
+    margin-bottom: 30px;
 }
 
 .header h1 {
-    font-weight: 600;
-    font-size: 2rem;
-    margin: 0 0 0.5rem 0;
-    letter-spacing: -0.02em;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 10px 0;
 }
 
 .header p {
+    font-size: 14px;
     color: var(--text-muted);
-    margin: 0 0 2.5rem 0;
-    font-size: 0.95rem;
-    line-height: 1.5;
+    margin: 0;
 }
 
-/* Buttons & Inputs */
+/* Primary "New Meeting" Button */
 .btn-primary {
     width: 100%;
-    padding: 16px;
-    background: var(--text-main);
-    color: black;
+    padding: 12px;
+    background-color: var(--primary);
+    color: white;
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
+    font-size: 16px;
     font-weight: 600;
-    font-size: 1rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .btn-primary:hover {
-    background: #e0e0e0;
-    transform: scale(1.02);
+    background-color: var(--primary-hover);
 }
 
+/* Divider */
 .divider {
-    margin: 1.5rem 0;
-    position: relative;
+    margin: 25px 0;
     display: flex;
     align-items: center;
-    justify-content: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+.divider::before, .divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
 }
 .divider span {
-    background: var(--bg-color); /* Matches visual bg behind card roughly, or transparent */
-    background-clip: padding-box; 
-    color: var(--text-muted);
-    font-size: 0.8rem;
     padding: 0 10px;
-    z-index: 2;
-}
-.divider::before {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 1px;
-    background: var(--glass-border);
-    z-index: 1;
 }
 
-.input-wrapper {
+/* Input Area */
+.input-group {
     display: flex;
-    gap: 10px;
-    background: rgba(0,0,0,0.2);
-    padding: 6px;
-    border-radius: 12px;
-    border: 1px solid var(--glass-border);
+    gap: 8px;
 }
 
 input {
     flex: 1;
-    background: transparent;
-    border: none;
-    padding: 10px;
-    color: white;
-    font-family: var(--font-main);
-    font-size: 0.9rem;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
     outline: none;
+    transition: border 0.2s;
+    color: #333;
+    background: #fff;
 }
 
-.btn-icon {
-    background: var(--card-bg);
-    color: white;
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    width: 40px;
-    cursor: pointer;
-    transition: 0.2s;
+input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(14, 113, 235, 0.1);
 }
-.btn-icon:hover {
-    background: var(--accent);
-    border-color: var(--accent);
+
+.btn-secondary {
+    padding: 0 20px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-main);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #f0f0f0;
+    border-color: #ccc;
 }
 
 /* =========================================
-   CALL PAGE STYLES (Existing but Refined)
+   CALL PAGE STYLES (Updates for Light Mode)
    ========================================= */
 
-/* Loading Overlay */
-.loading-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: #0f0f11;
-    z-index: 999;
+/* If you are on the call page, the body needs to be full height but block display */
+body:has(.video-grid-container) {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    justify-content: flex-start; /* Align top */
+    background: #222; /* Keep call interface dark for video contrast */
+    color: white;
 }
-.loading-spinner {
-    border: 3px solid rgba(255,255,255,0.1);
-    border-top: 3px solid var(--accent);
-    border-radius: 50%;
-    width: 40px; height: 40px;
-    animation: spin 1s linear infinite;
-    margin-bottom: 15px;
-}
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* Grid Layout */
+/* Keep video UI dark for better viewing experience */
 .video-grid-container {
+    flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 15px;
     padding: 20px;
-    height: calc(100vh - 80px); /* Minus control bar */
-    overflow-y: auto;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .video-tile {
-    background: #18181b;
-    border-radius: 16px;
+    background: #333;
+    border-radius: 8px;
     overflow: hidden;
     position: relative;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     aspect-ratio: 16/9;
 }
 
@@ -233,88 +176,59 @@ video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
 }
 
-.user-info {
-    position: absolute;
-    bottom: 15px; left: 15px;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(5px);
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 500;
-}
-
-/* Controls */
 .control-bar {
-    height: 80px;
-    background: #18181b;
+    background: #111;
+    padding: 15px;
     display: flex;
-    align-items: center;
     justify-content: center;
-    gap: 12px;
-    border-top: 1px solid #27272a;
+    gap: 15px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .control-bar button {
-    background: #27272a;
+    background: #333;
     color: white;
     border: none;
-    height: 50px;
-    padding: 0 20px;
-    border-radius: 12px;
-    font-weight: 500;
+    padding: 12px 20px;
+    border-radius: 30px; /* Pill shape controls */
     cursor: pointer;
-    transition: 0.2s;
-    font-family: var(--font-main);
+    font-size: 14px;
 }
 
 .control-bar button:hover {
-    background: #3f3f46;
+    background: #444;
 }
 
 #leaveBtn {
-    background: rgba(220, 53, 69, 0.1);
-    color: #ff4d4d;
-}
-#leaveBtn:hover {
-    background: #ff4d4d;
+    background-color: #ea4335; /* Google Meet Red */
     color: white;
 }
 
 /* Chat Sidebar */
 .chat-sidebar {
     position: fixed;
-    top: 0; right: -360px;
-    width: 340px; height: 100%;
-    background: #18181b;
-    border-left: 1px solid #27272a;
-    transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); /* Smooth iOS-like slide */
+    top: 0; right: -320px;
+    width: 320px; height: 100%;
+    background: #fff; /* Light chat */
+    color: #333;
+    transition: 0.3s;
     display: flex;
     flex-direction: column;
     z-index: 100;
-    box-shadow: -10px 0 30px rgba(0,0,0,0.3);
+    box-shadow: -5px 0 15px rgba(0,0,0,0.1);
 }
 .chat-sidebar.open { right: 0; }
 
 .chat-header {
-    padding: 20px;
-    border-bottom: 1px solid #27272a;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
-
-.chat-messages { flex: 1; padding: 20px; overflow-y: auto; }
-.chat-input-area { padding: 20px; display: flex; gap: 10px; border-top: 1px solid #27272a; }
-.chat-input-area input { background: #27272a; border-radius: 8px; }
-.chat-input-area button {
-    background: var(--accent);
-    border: none;
-    border-radius: 8px;
-    color: white;
-    padding: 0 15px;
-    cursor: pointer;
-}
+.chat-messages { flex: 1; padding: 10px; overflow-y: auto; }
+.chat-input-area { padding: 15px; display: flex; gap: 5px; border-top: 1px solid #eee;}
+.chat-input-area input { border: 1px solid #ddd; }
